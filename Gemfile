@@ -13,7 +13,7 @@ gem 'rdf', '~> 2.1.1'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.7.1'
 # Use sqlite3 as the database for Active Record
-gem 'sqlite3'
+# gem 'sqlite3'
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'
 # Use Uglifier as compressor for JavaScript assets
@@ -63,7 +63,7 @@ gem 'api-pagination'
 gem 'browse-everything', '~> 0.10.5'
 gem 'bootstrap_form'
 gem 'bootstrap-toggle-rails'
-gem 'rubyhorn', git: "https://github.com/avalonmediasystem/rubyhorn.git"
+gem 'rubyhorn', git: "https://github.com/uhlibraries-digital/rubyhorn.git"
 gem 'roo'
 gem 'activerecord-session_store'
 gem 'whenever', git: "https://github.com/javan/whenever.git", require: false
@@ -141,12 +141,14 @@ group :test do
   gem 'hashdiff'
 end
 
-group :mysql, optional: true do
-  gem 'mysql2'
-end
+# group :mysql, optional: true do
+#  gem 'mysql2'
+# end
 group :postgres, optional: true do
   gem 'pg'
 end
 
 extra_gems = File.expand_path("../Gemfile.local",__FILE__)
 eval File.read(extra_gems) if File.exists?(extra_gems)
+
+gem 'mysql2', '~>0.3.20'
