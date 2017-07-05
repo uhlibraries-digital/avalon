@@ -48,6 +48,11 @@ Devise.setup do |config|
   # to authenticate or find a user. Default is :email.
   config.case_insensitive_keys = [:username]
 
+  # Configure CAS authentication settings
+  config.cas_base_url = "https://signin.lib.uh.edu"
+  config.cas_validate_url = "https://signin.lib.uh.edu/p3/serviceValidate"
+  config.cas_create_user = true
+
   # Configure which authentication keys should have whitespace stripped.
   # These keys will have whitespace before and after removed upon creating or
   # modifying a user and when used to authenticate or find a user. Default is :email.
@@ -253,18 +258,18 @@ Devise.setup do |config|
     if provider[:provider] == :lti
       provider[:params].merge!({consumers: Avalon::Lti::Configuration})
     end
-    
+
     if provider[:provider] == :identity
       provider[:params].merge!({
         on_login: AuthFormsController.action(:render_form, AuthFormsController.dispatcher(:identity, :request_phase)),
         on_registration: AuthFormsController.action(:render_form, AuthFormsController.dispatcher(:identity, :registration_form))
       })
     end
-    
+
     config.omniauth provider[:provider], provider[:params]
   end
   if ENV['LTI_AUTH_KEY']
-    config.omniauth :lti, consumers: Avalon::Lti::Configuration, 
+    config.omniauth :lti, consumers: Avalon::Lti::Configuration,
       oauth_credentials: { ENV['LTI_AUTH_KEY'] => ENV['LTI_AUTH_SECRET'] }
   end
 

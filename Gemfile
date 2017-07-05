@@ -2,6 +2,8 @@ source 'https://rubygems.org'
 gem 'fedora-migrate', '~> 0.5.0'
 gem 'rdf-rdfxml'
 
+gem 'devise_cas_authenticatable'
+
 gem 'hydra-head', '~> 10.3.4'
 gem 'active-fedora', '>= 10.3.0'
 gem 'active_fedora-datastreams'
