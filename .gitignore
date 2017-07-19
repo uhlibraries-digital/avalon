@@ -21,11 +21,16 @@
 ## PROJECT::SPECIFIC
 config/authentication.yml
 config/avalon.yml
+config/blacklight.yml
 config/controlled_vocabulary.yml
+config/database.yml
+config/fedora.yml
 config/matterhorn.yml
+config/minter.yml
 config/role_map_development.yml
 config/initializers/rubyhorn.rb
 config/secrets.yml
+config/solr.yml
 config/lti.yml
 
 public/media_objects

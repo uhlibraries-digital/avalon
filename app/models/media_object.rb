@@ -1,11 +1,11 @@
 # Copyright 2011-2017, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -133,6 +133,7 @@ class MediaObject < ActiveFedora::Base
   # omit the status which will default to unpublished. This makes the act
   # of publishing _explicit_ instead of an accidental side effect.
   def publish!(user_key)
+    MintIdentifierJob::Create.perform_later(self.id)
     self.avalon_publisher = user_key.blank? ? nil : user_key
     save!
   end
