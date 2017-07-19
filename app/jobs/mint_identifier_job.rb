@@ -46,7 +46,7 @@ module MintIdentifierJob
           where: media_object_url(@media_object)
         )
         Rails.logger.info "Minted ARK #{@ark.id} for #{media_object_id}"
-        ids = @media_object.other_identifier
+        ids = @media_object.other_identifier ||= []
         ids << { source: 'digital object', id: @ark.id }
         @media_object.other_identifier = ids
         @media_object.save( validate: false )
@@ -54,7 +54,8 @@ module MintIdentifierJob
     end
 
     def identifier?
-      @media_object.other_identifier.each do |i|
+      ids = @media_object.other_identifier ||= []
+      ids do |i|
         if i[:source] == 'digital object'
           return !i[:id].blank?
         end
