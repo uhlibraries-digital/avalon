@@ -1,11 +1,11 @@
 # Copyright 2011-2017, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -68,6 +68,11 @@ module Avalon
           note = mo_parameters.delete(:note)
           note_type = mo_parameters.delete(:note_type)
           mo_parameters[:note] = note.zip(note_type).map{|a|{note: a[0],type: a[1]}} if note.present?
+          #Other Identifier
+          # FIXME: lets in empty values!
+          other_identifier = mo_parameters.delete(:other_identifier)
+          other_identifier_type = mo_parameters.delete(:other_identifier_type)
+          mo_parameters[:other_identifier] = other_identifier.zip(other_identifier_type).map{|a|{id: a[0],source: a[1]}} if other_identifier.present?
 
           mo_parameters
         end
