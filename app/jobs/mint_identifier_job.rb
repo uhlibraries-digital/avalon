@@ -47,7 +47,10 @@ module MintIdentifierJob
         )
         Rails.logger.info "Minted ARK #{@ark.id} for #{media_object_id}"
         ids = @media_object.other_identifier ||= []
-        ids << { source: 'digital object', id: @ark.id }
+        ids << {
+          source: 'digital object',
+          id: MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id 
+        }
         @media_object.other_identifier = ids
         @media_object.save( validate: false )
       end
