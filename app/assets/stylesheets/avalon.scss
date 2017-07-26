@@ -1,12 +1,12 @@
-/* 
+/*
  * Copyright 2011-2017, The Trustees of Indiana University and Northwestern
  *   University.  Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed
  *   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  *   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -17,6 +17,23 @@
 @import "branding";
 @import "bootstrap/variables";
 //@import "bootstrap-responsive";
+
+body {
+  font-family: $sansFontFamily;
+  height: 100%;
+}
+
+a {
+  color: $linkColor;
+}
+
+a:hover {
+  color: $linkHoverColor;
+}
+
+#sort-dropdown .dropdown-toggle, #per_page-dropdown .dropdown-toggle {
+  color: $linkColor;
+}
 
 /**
  * Snippets to extend
@@ -120,13 +137,36 @@ tr.active-false td {
 }
 
 .navbar {
-  background-image: linear-gradient(to bottom, #ffffff, #f2f2f2);
-  background-repeat: repeat-x;
-  border: 1px solid $navbar-inverse-border;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.067);
-  margin: 10px 0;
+  padding: .5em 0;
+  background-color: $darkRed;
   min-height: 0px;
+  margin: 0 -16px;
+  margin-bottom: 30px;
+  border: none;
+
+  a:not(.btn),
+  a:not(.btn):hover {
+    color: $yellow;
+  }
+
+  @media (max-width: $screen-xs-max) {
+    background-color: $uhRed;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+}
+
+.navbar-inverse {
+  .navbar-nav {
+    > .active > a,
+    > .active > a:hover,
+    > .active > a:focus,
+    > li > a:focus {
+      background-color: $darkerRed;
+      color: white;
+    }
+  }
 }
 
 .navbar-nav {
@@ -143,12 +183,20 @@ tr.active-false td {
 .container > .navbar-header {
   height: auto;
 }
-.navbar-inverse .navbar-toggle .icon-bar {
-  background-color: #888888;
+.navbar-inverse .navbar-toggle {
+  margin: 9px 15px 9px 0;
+  border: none;
+
+  &:hover,
+  &:focus {
+    background-color: $uhRed;
+  }
+
+  .icon-bar {
+    background-color: $yellow;
+  }
 }
-.navbar-toggle {
-  margin: 4px;
-}
+
 #user-util-collapse{
   border-top: 0;
 }
@@ -277,14 +325,50 @@ input[type="text"]#admin_group {
 
 /* Header */
 .custom-header {
-  background-color: #e9e9e9;
+  background-color: $headerBackgroundColor;
   color: $black;
+  padding: 0 30px;
   margin-bottom: 0em;
   font-size: .8em;
   @extend .mobile-hidden;
   .row {
     margin: 0;
   }
+  .logo {
+    padding: 25px 0 15px 24px;
+    img {
+      width: auto;
+      height: 80px;
+    }
+    @media(max-width: $screen-sm-max) {
+      text-align: center;
+    }
+  }
+}
+
+.application-name {
+  font-family: 'League Gothic', sans-serif;
+  font-size: 48px;
+  color: white;
+  text-align: right;
+  line-height: 48px;
+  display: block;
+  text-decoration: none;
+  margin: 45px 0 5px;
+
+  @media(max-width: $screen-sm-max) {
+    margin: 0;
+    text-align: center;
+  }
+}
+
+#header-navbar .navbar-brand {
+  background-image: asset-url('UHL-white-single.svg');
+  width: 80%;
+  height: 100%;
+  background-size: contain;
+  background-position: left;
+  margin-right: 0;
 }
 
 
@@ -293,12 +377,28 @@ header div{
   @extend .mobile-hidden;
 }
 
-.log-in-out a {
-  color: #2A5459;
-  background-color: #FBB040;
-  padding: .8em;
-  &:after {
-    content: "\003e \003e"
+.page-content {
+  padding-bottom: 30px;
+}
+
+.log-in-out {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 14px;
+  color: $yellow;
+
+  a:not(.btn) {
+    color: $yellow;
+    padding: .8em;
+    cursor: pointer;
+    text-decoration: none;
+    z-index: 1000;
+    &:before {
+      font-family: "FontAwesome";
+      content: "\f090";
+      margin-right: 3px;
+    }
   }
 }
 
@@ -311,7 +411,6 @@ header div{
 }
 
 .avalon-search-query-form .search-query {
-  border-radius: 15px;
   font-family: Arial,Helvetica,sans-serif;
   font-size: 13px;
   font-weight: normal;
@@ -391,48 +490,142 @@ div[id*='facet-panel-'] {
   margin: 3px;
 }
 
-
 /* Footer */
 footer {
-  margin-top: 10px;
-  padding-top: 20px;
-  border-top: 1px solid #EEE;
-  border-bottom: 1px solid #FFF;
 
-  ul {
-    margin-left: 0;
+  .uhl-footer {
+    background: $uhRed;
+    position: relative;
+
+    a:not(.btn) {
+      color: $yellow;
+      transition: color .25s ease;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .footer-inner {
+      position: relative;
+      padding: 30px;
+      margin: 0 auto;
+      overflow: hidden;
+
+      .footer-logo {
+        margin-bottom: 10px;
+
+        img {
+          position: relative;
+          width: 145px;
+          height: auto;
+          margin-bottom: 0px;
+          margin-top: 2px;
+          margin-left: 10px;
+        }
+      }
+
+      .footer-links {
+        margin-bottom: 10px;
+
+        .footer-links-list {
+          column-count: 3;
+          column-gap: 2rem;
+
+          li {
+            line-height: 1.5rem;
+            margin-bottom: 10px;
+          }
+        }
+      }
+
+      .social-media-list {
+        display: inline;
+        margin: 0 0;
+        padding: 0 0;
+
+        li {
+          display: inline-block;
+          margin: 0 0;
+          padding: 0 0;
+        }
+
+        a svg {
+          fill: $yellow;
+          transition: color .25s ease;
+          width: 40px;
+          height: 40px;
+          display: inline;
+          margin: 0 0;
+          padding: 0 0;
+          margin-left: 8px;
+          margin-bottom: 5px;
+        }
+
+        .contact-info {
+          position: relative;
+          height: auto;
+          display: block;
+        }
+      }
+
+    }
+
+    ul {
+      list-style: none;
+      list-style-image: none;
+      margin: 0;
+      padding: 0;
+    }
+
   }
 
-  li {
-    list-style-type: none;
-    display: inline;
-  }
+  .global-footer {
+    background-color: #54585A;
+    color: white;
+    font-size: 14px;
+    padding: 1em 0;
+    width: 100%;
+    height: auto;
+    line-height: 1.5;
 
-  li:before {
-    content: " - ";
-  }
+    .container {
+      padding-right: 2.5rem;
+      padding-left: 2.5rem;
 
-  li:first-child:before {
-    content: none;
-  }
-}
+      a:not(.btn) {
+        color: #ccc;
+        text-decoration: none;
+        transition: color .25s ease;
+      }
 
-footer a {
-  color: $black;
-}
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: inline;
 
-footer ul {
-  float: left;
-  margin-left: -40px;
-  @media all and (max-width: 475px) {
-    float: none;
-  }
-}
+        li {
+          display: inline-block;
+          margin-right: .5em;
+          margin-bottom: 0;
+          list-style: none;
 
-footer .release {
-  float: right;
-  @media all and (max-width: 475px) {
-    float: none;
+          &.nav-item-highlighted {
+            a:not(.btn) {
+              color: $yellow;
+              transition: color .25s ease;
+            }
+          }
+        }
+      }
+
+    }
+
+    a.copyright,
+    a:not(.btn).copyright {
+      display: inline;
+      margin: 0 .5em 0 0;
+      color: white;
+    }
   }
 }
 
@@ -628,9 +821,17 @@ a[data-trigger='submit'] {
 }
 .facet_limit-active > .panel-heading {
   background-color: $lightgray;
+  border-color: $uhRed;
 }
 :not(.facet_limit-active).facet_limit > .panel-heading {
   background-color: $white;
+}
+
+.facet_limit-active > .panel-heading + .panel-collapse > .panel-body {
+  border-top-color: $darkGray;
+}
+.panel-success, .facet_limit-active {
+  border-color: $darkGray;
 }
 
 .dl-horizontal {
@@ -694,13 +895,13 @@ a[data-trigger='submit'] {
 
 .appliedFilter {
   .btn {
-    background-color: $greenBG;
-    border-color: $green;
+    background-color: $grayBG;
+    border-color: $gray;
     font-size: $font-size-base;
   }
   .constraint-value:hover {
-    background-color: $greenBG;
-    border-color: $green;
+    background-color: $grayBG;
+    border-color: $gray;
   }
 }
 
@@ -823,7 +1024,6 @@ $accordionPadding: 20px;
     left: accordion-indent(1);
   }
   .panel-heading {
-    border-bottom: 1px solid #dddddd;
     padding: 7px 10px;
     ul {
       padding-left: $accordionPadding;
@@ -1022,7 +1222,8 @@ h5.panel-title {
   min-height: 1em;
 }
 .panel-heading {
-  border-top:1px solid $gray;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
 }
 .panel-heading .accordion-toggle:before {
     font-family: 'FontAwesome';

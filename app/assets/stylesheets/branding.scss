@@ -1,12 +1,12 @@
-/* 
+/*
  * Copyright 2011-2017, The Trustees of Indiana University and Northwestern
  *   University.  Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed
  *   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  *   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -18,7 +18,7 @@
  * Custom branding for Avalon to override Bootstrap, Hydra, and Blacklight
  * defaults. This should be included at the top of the application.scss file
  * so it is preferred over the defaults. */
-$sansFontFamily: Arial, Helvetica, sans-serif;
+$sansFontFamily: 'Milo', sans-serif;
 
 /**
  * If you want to override the default color scheme do so here
@@ -40,15 +40,21 @@ $greenBG: scale-color($green, $saturation: -40%, $lightness: 60%);
 $white: rgb(255, 255, 255);
 $orange: rgb(42, 84, 69);
 $black: #333;
-$gray: #CFD8D3;
+$gray: #555;
 $lightgray: #F5F5F5;
 $red: #D9534F;
 $blue: #2a4d59;
+$grayBG: #ddd;
+$darkGray: #6f6f6f;
+$uhRed: #c8102e;
+$darkRed: #960C22;
+$darkerRed: #700919;
+$yellow: #FFF9D9;
 
 /* Links */
 
-$linkColor: rgb(42, 84, 89);
-$linkHoverColor: $lightgray;
+$linkColor: #c8102e;
+$linkHoverColor: #960C22;
 
 /* Alerts */
 
@@ -58,8 +64,8 @@ $warningBackground: rgb(234, 234, 234);
 $successText: $black;
 $successLink: rgb(250, 250, 250);
 $successBackground: $gray;
-$state-success-bg: $gray;
-$state-success-text: $black;
+$state-success-bg: #FFF9D9;
+$state-success-text: #333;
 $state-info-bg: $gray;
 $state-info-text: $black;
 
@@ -68,7 +74,7 @@ $infoBackground: $gray;
 
 /* Header */
 
-$headerBackgroundColor: rgb(234, 234, 234);
+$headerBackgroundColor: #c8102e;
 $headerTextColor: $white;
 $loginTextColor: $gray;
 $loginLinkColor: rgb(42, 84, 89);
@@ -76,7 +82,7 @@ $loginLinkBackgroundColor: rgb(251, 176, 64);
 
 /* Sidenav */
 
-$sidenavHeaderBackgroundColor: $greenBG;
+$sidenavHeaderBackgroundColor: #ddd;
 
 /* Search Facets */
 $constraint_bg_color: $greenBG;
@@ -111,8 +117,8 @@ $btn-default-color: 			    $black;
 $btn-default-bg: 			    $white;
 $btn-default-border: 			    $gray;
 $btn-primary-color: 			    $white;
-$btn-primary-bg: 			    $blue;
-$btn-primary-border: 			    $blue;
+$btn-primary-bg: 			    $linkColor;
+$btn-primary-border: 			    $linkColor;
 $btn-success-color: 			    $black;
 $btn-success-bg: 			    $lightgray;
 $btn-success-border: 			    $gray;
