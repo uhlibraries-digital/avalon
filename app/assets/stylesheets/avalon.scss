@@ -18,9 +18,12 @@
 @import "bootstrap/variables";
 //@import "bootstrap-responsive";
 
+html {
+  background: #333;
+}
+
 body {
   font-family: $sansFontFamily;
-  height: 100%;
 }
 
 a {
@@ -336,6 +339,11 @@ input[type="text"]#admin_group {
   }
   .logo {
     padding: 25px 0 15px 24px;
+
+    a:not(.btn) {
+      display: inline-block;
+    }
+
     img {
       width: auto;
       height: 85px;
@@ -346,19 +354,24 @@ input[type="text"]#admin_group {
   }
 }
 
-.application-name {
-  font-family: 'League Gothic', sans-serif;
-  font-size: 48px;
-  color: white;
-  text-align: right;
-  line-height: 48px;
-  display: block;
-  text-decoration: none;
-  margin: 45px 0 5px;
+a:not(.btn) {
+  &.application-name {
+    font-family: 'League Gothic', sans-serif;
+    font-size: 48px;
+    color: white;
+    text-align: right;
+    line-height: 48px;
+    display: inline-block;
+    text-decoration: none;
+    margin: 45px 0 5px;
+    float: right;
 
-  @media(max-width: $screen-sm-max) {
-    margin: 0;
-    text-align: center;
+    @media(max-width: $screen-sm-max) {
+      margin: 0;
+      text-align: center;
+      float: none;
+      display: block;
+    }
   }
 }
 
@@ -498,71 +511,32 @@ footer {
     position: relative;
 
     a:not(.btn) {
-      color: $yellow;
-      transition: color .25s ease;
+      color: $white;
       cursor: pointer;
       text-decoration: none;
     }
 
     .footer-inner {
       position: relative;
-      padding: 30px;
       margin: 0 auto;
       overflow: hidden;
 
-      .footer-logo {
-        margin-bottom: 10px;
-
-        img {
-          position: relative;
-          width: 100%;
-          max-width: 260px;
-          height: auto;
-          margin: 10px 0 30px;
-        }
-      }
-
       .footer-links {
-        margin-bottom: 10px;
+        text-align: center;
 
         .footer-links-list {
-          column-count: 3;
-          column-gap: 2rem;
+          margin: 10px 0;
 
           li {
-            line-height: 24px;
-            margin-bottom: 10px;
+            line-height: 34px;
+            display: inline-block;
+
+            a:not(.btn) {
+              padding: 5px 10px;
+              display: inline-block;
+            }
           }
         }
-      }
-
-      .social-media-list {
-        display: inline;
-        margin: 0 0;
-        padding: 0 0;
-
-        li {
-          display: inline-block;
-          margin: 0 0;
-          padding: 0 0;
-        }
-
-        a svg {
-          fill: $yellow;
-          transition: color .25s ease;
-          width: 40px;
-          height: 40px;
-          display: inline;
-          margin: 0 0;
-          padding: 0 0;
-          margin-left: 8px;
-          margin-bottom: 5px;
-        }
-      }
-
-      .contact-info {
-        margin-bottom: 10px;
-        line-height: 1.5;
       }
 
     }
