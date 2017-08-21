@@ -49,7 +49,7 @@ module MintIdentifierJob
         ids = @media_object.other_identifier ||= []
         ids << {
           source: 'digital object',
-          id: MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id 
+          id: MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id
         }
         @media_object.other_identifier = ids
         @media_object.save( validate: false )
@@ -58,7 +58,7 @@ module MintIdentifierJob
 
     def identifier?
       ids = @media_object.other_identifier ||= []
-      ids do |i|
+      ids.each do |i|
         if i[:source] == 'digital object'
           return !i[:id].blank?
         end
