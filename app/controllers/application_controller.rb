@@ -1,9 +1,9 @@
 # Copyright 2011-2017, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
 # 
 # Unless required by applicable law or agreed to in writing, software distributed
@@ -86,7 +86,8 @@ class ApplicationController < ActionController::Base
       redirect_to root_path, flash: { notice: 'You are not authorized to perform this action.' }
     else
       session[:previous_url] = request.fullpath unless request.xhr?
-      redirect_to new_user_session_path, flash: { notice: 'You are not authorized to perform this action. Try logging in.' }
+      #redirect_to new_user_session_path, flash: { notice: 'You are not authorized to perform this action. Try logging in.' }
+      redirect_to new_user_session_path
     end
   end
 
