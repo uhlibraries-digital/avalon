@@ -52,6 +52,8 @@ module UpdateArkIdentifierJob
             ids[index][:id] = MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id
           end
         end
+        @media_object.other_identifier = ids
+        @media_object.save( validate: false )
       end
     end
 
