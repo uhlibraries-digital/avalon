@@ -44,6 +44,14 @@ module UpdateArkIdentifierJob
         @ark.where = media_object_url(@media_object)
         @ark.save
         Rails.logger.info "Update ARK #{@ark.id} for #{media_object_id}"
+
+        # Need Avalon to house the full ARK URL
+        ids = $media_object.other_identifier ||= []
+        ids.each.with_index do |id, index|
+          if id[:source] == 'digital object'
+            ids[index][:id] = MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id
+          end
+        end
       end
     end
 
@@ -62,7 +70,7 @@ module UpdateArkIdentifierJob
     ids = @media_object.other_identifier ||= []
     ids.each do |i|
       if i[:source] == 'digital object'
-        return i[:id]
+        return i[:id].match(/(ark:\/[0-9a-z\/]+)/).to_s
       end
     end
     return ''
