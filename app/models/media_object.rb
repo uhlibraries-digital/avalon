@@ -133,7 +133,7 @@ class MediaObject < ActiveFedora::Base
   # omit the status which will default to unpublished. This makes the act
   # of publishing _explicit_ instead of an accidental side effect.
   def publish!(user_key)
-    MintIdentifierJob::Create.perform_later(self.id)
+    UpdateArkIdentifierJob::Create.perform_later(self.id)
     self.avalon_publisher = user_key.blank? ? nil : user_key
     save!
   end

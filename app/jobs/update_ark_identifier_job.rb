@@ -1,9 +1,9 @@
-# Mints ARK identifier for media objects when published
+# Update ARK identifier for media objects when published
 #
 # University of Houston
 # author: Sean Watkins <slwatkins@uh.edu>
 
-module MintIdentifierJob
+module UpdateArkIdentifierJob
 
   class Config
     def initialize
@@ -35,24 +35,15 @@ module MintIdentifierJob
   class Create < ActiveJob::Base
     include Rails.application.routes.url_helpers
 
-    queue_as :mint_identifier_create
+    queue_as :update_ark_identifier_create
     def perform(media_object_id)
       @media_object = MediaObject.find(media_object_id)
-      if !self.identifier?
-        @ark = MintIdentifierJob::Ark.create(
-          who:  @media_object.creator.empty? ? 'unknown' : @media_object.creator.join("; "),
-          what: @media_object.title.presence || 'unknown',
-          when: @media_object.date_issued.presence || 'unknown',
-          where: media_object_url(@media_object)
-        )
-        Rails.logger.info "Minted ARK #{@ark.id} for #{media_object_id}"
-        ids = @media_object.other_identifier ||= []
-        ids << {
-          source: 'digital object',
-          id: MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id
-        }
-        @media_object.other_identifier = ids
-        @media_object.save( validate: false )
+      if self.identifier?
+        @ark = UpdateArkIdentifierJob::Ark.new
+        @ark.id = self.identifier
+        @ark.where = media_object_url(@media_object)
+        @ark.save
+        Rails.logger.info "Update ARK #{@ark.id} for #{media_object_id}"
       end
     end
 
@@ -67,6 +58,16 @@ module MintIdentifierJob
     end
   end
 
+  def indenifier
+    ids = @media_object.other_identifier ||= []
+    ids.each do |i|
+      if i[:source] == 'digital object'
+        return i[:id]
+      end
+    end
+    return ''
+  end
+
   class ArkProxy < Flexirest::ProxyBase
     get "/id/:id" do
       response = passthrough
@@ -78,8 +79,8 @@ module MintIdentifierJob
   end
 
   class Ark < Flexirest::Base
-    proxy MintIdentifierJob::ArkProxy
-    base_url MintIdentifierJob::Configuration.lookup('endpoint')
+    proxy UpdateArkIdentifierJob::ArkProxy
+    base_url UpdateArkIdentifierJob::Configuration.lookup('endpoint')
 
     before_request :add_authentication_details
 
@@ -87,10 +88,10 @@ module MintIdentifierJob
 
     get :find, "/id/:id"
     put :save, "/id/:id"
-    post :create, "/arks/mint/" + MintIdentifierJob::Configuration.lookup('prefix')
+    post :create, "/arks/mint/" + UpdateArkIdentifierJob::Configuration.lookup('prefix')
 
     def add_authentication_details(name, request)
-      request.headers["api-key"] = MintIdentifierJob::Configuration.lookup('api_key')
+      request.headers["api-key"] = UpdateArkIdentifierJob::Configuration.lookup('api_key')
     end
 
   end
