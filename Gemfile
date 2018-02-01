@@ -2,9 +2,7 @@ source 'https://rubygems.org'
 gem 'fedora-migrate', '~> 0.5.0'
 gem 'rdf-rdfxml'
 
-gem 'flexirest'
-
-gem 'devise_cas_authenticatable'
+gem 'flexirest', '1.3.33'
 
 gem 'hydra-head', '~> 10.3.4'
 gem 'active-fedora', '>= 10.3.0'
@@ -48,6 +46,7 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 
 gem 'rsolr', '~> 1.0'
 gem 'devise'
+gem 'devise_cas_authenticatable'
 #gem 'devise-guests', '~> 0.3'
 
 # Avalon-specific
