@@ -39,17 +39,19 @@ module UpdateArkIdentifierJob
     def perform(media_object_id)
       @media_object = MediaObject.find(media_object_id)
       if self.identifier?
+        ark_id = self.identifier
         @ark = UpdateArkIdentifierJob::Ark.new
-        @ark.id = self.identifier
+        @ark.id = ark_id
         @ark.where = media_object_url(@media_object)
-        @ark.save
-        Rails.logger.info "Update ARK #{@ark.id} for #{media_object_id}"
+        @ark.save      
+        Rails.logger.info "Update ARK #{ark_id} for #{media_object_id}"
 
         # Need Avalon to house the full ARK URL
-        ids = $media_object.other_identifier ||= []
+        ids = @media_object.other_identifier ||= []
         ids.each.with_index do |id, index|
           if id[:source] == 'digital object'
-            ids[index][:id] = MintIdentifierJob::Configuration.lookup('base_uri') + @ark.id
+            Rails.logger.info "#{ark_id}"
+            ids[index][:id] = UpdateArkIdentifierJob::Configuration.lookup('base_uri') + ark_id
           end
         end
         @media_object.other_identifier = ids
@@ -58,7 +60,7 @@ module UpdateArkIdentifierJob
       end
     end
 
-    def identifier?
+    def identifier? 
       ids = @media_object.other_identifier ||= []
       ids.each do |i|
         if i[:source] == 'digital object'
@@ -67,16 +69,16 @@ module UpdateArkIdentifierJob
       end
       return false
     end
-  end
 
-  def indenifier
-    ids = @media_object.other_identifier ||= []
-    ids.each do |i|
-      if i[:source] == 'digital object'
-        return i[:id].match(/(ark:\/[0-9a-z\/]+)/).to_s
+    def identifier 
+      ids = @media_object.other_identifier ||= []
+      ids.each do |i|
+        if i[:source] == 'digital object'
+          return i[:id].match(/(ark:\/[0-9a-z\/]+)/).to_s
+        end
       end
+      return ''
     end
-    return ''
   end
 
   class ArkProxy < Flexirest::ProxyBase
