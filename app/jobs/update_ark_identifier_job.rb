@@ -54,6 +54,7 @@ module UpdateArkIdentifierJob
         end
         @media_object.other_identifier = ids
         @media_object.save( validate: false )
+        InsertAspaceDigitalObjectJob::Create.perform_later(media_object_id)
       end
     end
 
