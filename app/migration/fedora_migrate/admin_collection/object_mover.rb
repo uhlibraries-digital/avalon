@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -43,6 +43,15 @@ module FedoraMigrate
         mover = FedoraMigrate::AdminCollection::DefaultRightsDatastreamMover.new(source.datastreams['defaultRights'], target)
         mover.migrate
         report.permissions += mover.migrate
+      end
+
+      def self.wipeout!(collection)
+        collection.default_permissions.destroy_all
+        super
+      end
+
+      def self.empty?(collection)
+        collection.default_permissions.blank? && super
       end
     end
   end

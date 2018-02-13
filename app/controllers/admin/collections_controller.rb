@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -19,7 +19,7 @@ class Admin::CollectionsController < ApplicationController
   respond_to :html
 
   def load_and_authorize_collections
-    @collections = get_user_collections
+    @collections = get_user_collections(params[:user])
     authorize!(params[:action].to_sym, Admin::Collection)
   end
 
@@ -73,7 +73,7 @@ class Admin::CollectionsController < ApplicationController
   def create
     @collection = Admin::Collection.create(collection_params)
     if @collection.persisted?
-      User.where(username: [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
+      User.where(Devise.authentication_keys.first => [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
         NotificationsMailer.new_collection(
           creator_id: current_user.id,
           collection_id: @collection.id,
@@ -147,9 +147,13 @@ class Admin::CollectionsController < ApplicationController
 
         if params["remove_#{title}"].present?
           if ["group", "class", "ipaddress"].include? title
+            # This is a hack to deal with the fact that calling default_read_groups#delete isn't marking the record as dirty
+            # TODO: Ensure default_read_groups is tracked by ActiveModel::Dirty
             @collection.default_read_groups_will_change!
             @collection.default_read_groups.delete params["remove_#{title}"]
           else
+            # This is a hack to deal with the fact that calling default_read_users#delete isn't marking the record as dirty
+            # TODO: Ensure default_read_users is tracked by ActiveModel::Dirty
             @collection.default_read_users_will_change!
             @collection.default_read_users.delete params["remove_#{title}"]
           end
@@ -163,7 +167,7 @@ class Admin::CollectionsController < ApplicationController
     @collection.update_attributes collection_params if collection_params.present?
     saved = @collection.save
     if saved and name_changed
-      User.where(username: [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
+      User.where(Devise.authentication_keys.first => [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
         NotificationsMailer.update_collection(
           updater_id: current_user.id,
           collection_id: @collection.id,
@@ -225,8 +229,6 @@ class Admin::CollectionsController < ApplicationController
   private
 
   def collection_params
-    # TODO: Restrist permitted params!!!
-    params.permit!
-    params[:admin_collection]
+    params.permit(:admin_collection => [:name, :description, :unit, :managers => []])[:admin_collection]
   end
 end

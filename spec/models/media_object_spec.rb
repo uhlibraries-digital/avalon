@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -129,7 +129,7 @@ describe MediaObject do
 
     context 'when manager' do
       subject{ ability}
-      let(:ability){ Ability.new(User.where(username: collection.managers.first).first) }
+      let(:ability){ Ability.new(User.where(Devise.authentication_keys.first => collection.managers.first).first) }
 
       it{ is_expected.to be_able_to(:create, MediaObject) }
       it{ is_expected.to be_able_to(:read, media_object) }
@@ -143,7 +143,7 @@ describe MediaObject do
       end
 
       context 'and logged in through LTI' do
-        let(:ability){ Ability.new(User.where(username: collection.managers.first).first, {full_login: false, virtual_groups: [Faker::Lorem.word]}) }
+        let(:ability){ Ability.new(User.where(Devise.authentication_keys.first => collection.managers.first).first, {full_login: false, virtual_groups: [Faker::Lorem.word]}) }
 
         it{ is_expected.not_to be_able_to(:share, MediaObject) }
         it{ is_expected.not_to be_able_to(:update, media_object) }
@@ -153,7 +153,7 @@ describe MediaObject do
 
     context 'when editor' do
       subject{ ability}
-      let(:ability){ Ability.new(User.where(username: collection.editors.first).first) }
+      let(:ability){ Ability.new(User.where(Devise.authentication_keys.first => collection.editors.first).first) }
 
       it{ is_expected.to be_able_to(:create, MediaObject) }
       it{ is_expected.to be_able_to(:read, media_object) }
@@ -171,7 +171,7 @@ describe MediaObject do
 
     context 'when depositor' do
       subject{ ability }
-      let(:ability){ Ability.new(User.where(username: collection.depositors.first).first) }
+      let(:ability){ Ability.new(User.where(Devise.authentication_keys.first => collection.depositors.first).first) }
 
       it{ is_expected.to be_able_to(:create, MediaObject) }
       it{ is_expected.to be_able_to(:read, media_object) }
@@ -326,10 +326,76 @@ describe MediaObject do
     end
   end
 
+  describe "Update datastream with empty strings" do
+    it "should remove pre-existing values" do
+      media_object = FactoryGirl.create( :fully_searchable_media_object )
+      params = {
+        'alternative_title' => [''],
+        'translated_title' => [''],
+        'uniform_title' => [''],
+        'creator' => [''],
+        'format' => [''],
+        'contributor' => [''],
+        'publisher' => [''],
+        'subject' => [''],
+        'related_item_url' => [{label:'',url:''}],
+        'geographic_subject' => [''],
+        'temporal_subject' => [''],
+        'topical_subject' => [''],
+        'language' => [''],
+        'table_of_contents' => [''],
+        'physical_description' => [''],
+        'record_identifier' => [''],
+        'note' => [{type:'',note:''}],
+        'other_identifier' => [{id:'',source:''}]
+      }
+      media_object.assign_attributes(params)
+      expect(media_object.alternative_title).to eq([])
+      expect(media_object.translated_title).to eq([])
+      expect(media_object.uniform_title).to eq([])
+      expect(media_object.creator).to eq([])
+      expect(media_object.format).to eq([])
+      expect(media_object.contributor).to eq([])
+      expect(media_object.publisher).to eq([])
+      expect(media_object.subject).to eq([])
+      expect(media_object.related_item_url).to eq([])
+      expect(media_object.geographic_subject).to eq([])
+      expect(media_object.temporal_subject).to eq([])
+      expect(media_object.topical_subject).to eq([])
+      expect(media_object.language).to eq([])
+      expect(media_object.table_of_contents).to eq([])
+      expect(media_object.physical_description).to eq([])
+      expect(media_object.record_identifier).to eq([])
+      expect(media_object.note).to be_nil
+      expect(media_object.other_identifier).to be_nil
+   end
+  end
+
   describe "Update datastream directly" do
     it "should reflect datastream changes on media object" do
-      newtitle = Faker::Lorem.sentence
       media_object.descMetadata.add_bibliographic_id('ABC123','local')
+      media_object.save
+      media_object.reload
+      expect(media_object.bibliographic_id).to eq({source: "local", id: 'ABC123'})
+    end
+  end
+
+  describe "Correctly set table of contents from form" do
+    it "should not include empty strings" do
+      media_object.update_attributes({'table_of_contents' => ['']})
+      expect(media_object.table_of_contents).to eq([])
+    end
+    it "should include actual strings" do
+      media_object.update_attributes({'table_of_contents' => ['Test']})
+      expect(media_object.table_of_contents).to eq(['Test'])
+    end
+  end
+
+  describe "Bibliographic Identifiers" do
+    it "should exclude recordIdentifier[@source = Fedora or Fedora4]" do
+      media_object.descMetadata.add_bibliographic_id('ABC123','local')
+      media_object.descMetadata.add_bibliographic_id('DEF456','Fedora')
+      media_object.descMetadata.add_bibliographic_id('GHI789','Fedora4')
       media_object.save
       media_object.reload
       expect(media_object.bibliographic_id).to eq({source: "local", id: 'ABC123'})
@@ -514,6 +580,10 @@ describe MediaObject do
       Permalink.on_generate{ |obj,target| 'http://www.example.com/perma-url' }
     }
 
+    after(:each) do
+      Permalink.on_generate { nil }
+    end
+
     context 'unpublished' do
       it 'is empty when unpublished' do
         expect(media_object.permalink).to be_blank
@@ -538,7 +608,7 @@ describe MediaObject do
 
       it 'does not remove the permalink if the permalink service returns nil' do
         Permalink.on_generate{ nil }
-        media_object.save( validate: false )
+        media_object.save
         expect(media_object.permalink).to eq('http://www.example.com/perma-url')
       end
 
@@ -588,7 +658,7 @@ describe MediaObject do
       it 'returns false when not updated' do
         media_object.publish!('C.S. Lewis')
         expect(media_object).to receive(:ensure_permalink!).and_return(false)
-        media_object.save( validate: false )
+        media_object.save
       end
     end
   end
@@ -596,19 +666,35 @@ describe MediaObject do
   describe 'bib import' do
     let(:bib_id) { '7763100' }
     let(:mods) { File.read(File.expand_path("../../fixtures/#{bib_id}.mods",__FILE__)) }
-    before do
-      media_object.resource_type = "moving image"
-      media_object.format = "video/mpeg"
-      instance = double("instance")
-      allow(Avalon::BibRetriever).to receive(:instance).and_return(instance)
-      allow(Avalon::BibRetriever.instance).to receive(:get_record).and_return(mods)
-    end
+    describe 'only overrides correct fields' do
+      before do
+        media_object.resource_type = "moving image"
+        media_object.format = "video/mpeg"
+        instance = double("instance")
+        allow(Avalon::BibRetriever).to receive(:instance).and_return(instance)
+        allow(Avalon::BibRetriever.instance).to receive(:get_record).and_return(mods)
+      end
 
-    it 'should not override format' do
-      expect { media_object.descMetadata.populate_from_catalog!(bib_id, 'local') }.to_not change { media_object.format }
+      it 'should not override format' do
+        expect { media_object.descMetadata.populate_from_catalog!(bib_id, 'local') }.to_not change { media_object.format }
+      end
+      it 'should not override resource_type' do
+        expect { media_object.descMetadata.populate_from_catalog!(bib_id, 'local') }.to_not change { media_object.resource_type }
+      end
+      it 'should override the title' do
+        expect { media_object.descMetadata.populate_from_catalog!(bib_id, 'local') }.to change { media_object.title }.to "245 A : B F G K N P S"
+      end
     end
-    it 'should not override resource_type' do
-      expect { media_object.descMetadata.populate_from_catalog!(bib_id, 'local') }.to_not change { media_object.resource_type }
+    describe 'should strip whitespace from bib_id parameter' do
+      let(:sru_url) { "http://zgate.example.edu:9000/db?version=1.1&operation=searchRetrieve&maximumRecords=1&recordSchema=marcxml&query=rec.id=#{bib_id}" }
+      let(:sru_response) { File.read(File.expand_path("../../fixtures/#{bib_id}.xml",__FILE__)) }
+      let!(:request) { stub_request(:get, sru_url).to_return(body: sru_response) }
+
+      it 'should strip whitespace off bib_id parameter' do
+        Settings.bib_retriever = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
+        expect { media_object.descMetadata.populate_from_catalog!(" #{bib_id} ", 'local') }.to change { media_object.title }.to "245 A : B F G K N P S"
+        expect(request).to have_been_requested
+      end
     end
   end
 
@@ -668,6 +754,23 @@ describe MediaObject do
       expect {media_object.collection = collection}.not_to change {new_media_object.visibility}
       expect {media_object.collection = collection}.not_to change {new_media_object.read_users}
       expect {media_object.collection = collection}.not_to change {new_media_object.read_users}
+    end
+  end
+
+  describe 'descMetadata' do
+    it 'sets original_name to default value' do
+      expect(media_object.descMetadata.original_name).to eq 'descMetadata.xml'
+    end
+    it 'is a valid MODS document' do
+      media_object = FactoryGirl.create(:media_object, :with_master_file)
+      xsd = Nokogiri::XML::Schema(File.read('spec/fixtures/mods-3-6.xsd'))
+      expect(xsd.valid?(media_object.descMetadata.ng_xml)).to be_truthy
+    end
+  end
+
+  describe 'workflow' do
+    it 'sets original_name to default value' do
+      expect(media_object.workflow.original_name).to eq 'workflow.xml'
     end
   end
 end

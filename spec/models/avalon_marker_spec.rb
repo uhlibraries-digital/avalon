@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -24,6 +24,18 @@ describe AvalonMarker, type: :model do
     let(:avalon_clip) { FactoryGirl.create(:avalon_clip, master_file: master_file) }
     let(:playlist_item) { FactoryGirl.create(:playlist_item, playlist: playlist, clip: avalon_clip) }
     let(:avalon_marker) { FactoryGirl.create(:avalon_marker, playlist_item: playlist_item, master_file: master_file) }
+
+    context 'when owner' do
+      let(:playlist) { FactoryGirl.create(:playlist, user: user) }
+      let(:user) { FactoryGirl.create(:administrator) }
+
+      it { is_expected.to be_able_to(:manage, avalon_marker) }
+      it { is_expected.to be_able_to(:create, avalon_marker) }
+      it { is_expected.to be_able_to(:read, avalon_marker) }
+      it { is_expected.to be_able_to(:update, avalon_marker) }
+      it { is_expected.to be_able_to(:delete, avalon_marker) }
+    end
+
 
     context 'when owner' do
       let(:playlist) { FactoryGirl.create(:playlist, user: user) }
@@ -60,6 +72,19 @@ describe AvalonMarker, type: :model do
         let(:master_file) { FactoryGirl.create(:master_file, media_object: media_object) }
 
         it { is_expected.to be_able_to(:read, avalon_marker) }
+
+        context 'when playlist is share by link' do
+          let(:playlist) { FactoryGirl.create(:playlist, visibility: Playlist::PRIVATE_WITH_TOKEN) }
+
+          context 'when token is given' do
+            let(:ability) { Ability.new(user, {playlist_token: playlist.access_token}) }
+            it { is_expected.to be_able_to(:read, avalon_marker) }
+          end
+
+          context 'when token is not given' do
+            it { is_expected.not_to be_able_to(:read, avalon_marker) }
+          end
+        end
       end
     end
 
@@ -80,6 +105,19 @@ describe AvalonMarker, type: :model do
         let(:master_file) { FactoryGirl.create(:master_file, media_object: media_object) }
 
         it { is_expected.to be_able_to(:read, avalon_marker) }
+
+        context 'when playlist is share by link' do
+          let(:playlist) { FactoryGirl.create(:playlist, visibility: Playlist::PRIVATE_WITH_TOKEN) }
+
+          context 'when token is given' do
+            let(:ability) { Ability.new(user, {playlist_token: playlist.access_token}) }
+            it { is_expected.to be_able_to(:read, avalon_marker) }
+          end
+
+          context 'when token is not given' do
+            it { is_expected.not_to be_able_to(:read, avalon_marker) }
+          end
+        end
       end
     end
   end

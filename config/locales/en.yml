@@ -185,18 +185,28 @@ en:
 
   playlist:
     ago: "%{time} ago"
-    lockAltText: "This playlist is private."
-    unlockAltText: "This playlist is public."
-    lockText: "Private"
-    unlockText: "Public"
+
+    privateAltText: "This playlist can only be viewed by you."
+    publicAltText: "This playlist can be viewed by anyone on the web."
+    private-with-tokenAltText: "This playlist can only be viewed by users who have the unique link."
+
+    privateText: "Private"
+    publicText: "Public"
+    private-with-tokenText: "Share by link"
+
+    details: "Playlist Details"
     new:
       action: "Create"
     create:
       action: "Create"
+    create_and_edit:
+      action: "Create and Edit"
     edit:
       action: "Save Changes"
     update:
       action: "Save Changes"
+    tags:
+      label: "Tags"
 
   activerecord:
     attributes:

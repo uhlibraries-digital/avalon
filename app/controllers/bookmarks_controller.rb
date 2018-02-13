@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -93,11 +93,17 @@ class BookmarksController < CatalogController
   #   end
   # end
 
-  # def action_documents
+  # def action_documents (R5)
   #   bookmarks = token_or_current_or_guest_user.bookmarks
   #   bookmark_ids = bookmarks.collect { |b| b.document_id.to_s }
   #   get_solr_response_for_document_ids(bookmark_ids, rows: bookmark_ids.count, defType: 'edismax')
   # end
+
+  def action_documents
+    bookmarks = token_or_current_or_guest_user.bookmarks
+    bookmark_ids = bookmarks.collect { |b| b.document_id.to_s }
+    fetch(bookmark_ids, rows: bookmark_ids.count)
+  end
 
   def access_control_action documents
     errors = []

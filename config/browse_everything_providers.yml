@@ -4,9 +4,9 @@
 #
 ---
 file_system:
-#  :home: <%= ENV['HOME'] %>/downloads
-  :home: '/var/avalon/dropbox/'
-# dropbox:
+  :name: 'File Dropbox'
+  :home: /var/avalon/dropbox
+# drop_box:
 #   :app_key: YOUR_DROPBOX_APP_KEY
 #   :app_secret: YOUR_DROPBOX_APP_SECRET
 # box:

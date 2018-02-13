@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -13,6 +13,8 @@
 # ---  END LICENSE_HEADER BLOCK  ---
 
 # require 'avalon/controller/controller_behavior'
+
+include SecurityHelper
 
 class MasterFilesController < ApplicationController
   # include Avalon::Controller::ControllerBehavior
@@ -30,7 +32,7 @@ class MasterFilesController < ApplicationController
     if ds.nil? or ds.empty?
       render :text => 'Not Found', :status => :not_found
     else
-      render :text => ds.content, :content_type => ds.mime_type, :label => ds.original_name
+      send_data ds.content, type: ds.mime_type, filename: ds.original_name
     end
   end
 
@@ -46,9 +48,11 @@ class MasterFilesController < ApplicationController
   def embed
     @master_file = MasterFile.find(params[:id])
     if can? :read, @master_file
-      @token = @master_file.nil? ? "" : StreamToken.find_or_create_session_token(session, @master_file.id)
-      @stream_info = @master_file.stream_details(@token, default_url_options[:host])
+      @stream_info = secure_streams(@master_file.stream_details)
     end
+
+    @player_width = "100%"
+    @player_height = "100%"
     respond_to do |format|
       format.html do
         response.headers.delete "X-Frame-Options"
@@ -60,7 +64,7 @@ class MasterFilesController < ApplicationController
   def oembed
     if params[:url].present?
       id = params[:url].split('?')[0].split('/').last
-      mf = MasterFile.where("identifier_ssim:\"#{id}\"").first
+      mf = MasterFile.where(identifier_ssim: id.downcase).first
       mf ||= MasterFile.find(id) rescue nil
       if mf.present?
         width = params[:maxwidth] || MasterFile::EMBED_SIZE[:medium]
@@ -74,7 +78,7 @@ class MasterFilesController < ApplicationController
         hash = {
           "version" => "1.0",
           "type" => mf.is_video? ? "video" : "rich",
-          "provider_name" => Avalon::Configuration.lookup('name') || 'Avalon Media System',
+          "provider_name" => Settings.name || 'Avalon Media System',
           "provider_url" => request.base_url,
           "width" => width,
           "height" => height,
@@ -97,7 +101,12 @@ class MasterFilesController < ApplicationController
       authorize! :edit, @master_file, message: "You do not have sufficient privileges to add files"
       structure = request.format.json? ? params[:xml_content] : nil
       if params[:master_file].present? && params[:master_file][:structure].present?
-        structure = params[:master_file][:structure].open.read
+        structure_file = params[:master_file][:structure]
+        if structure_file.content_type != "text/xml"
+          flash[:error] = "Uploaded file is not a structure xml file"
+        else
+          structure = structure_file.open.read
+        end
       end
       if structure.present?
         validation_errors = StructuralMetadata.content_valid? structure
@@ -115,7 +124,7 @@ class MasterFilesController < ApplicationController
     end
     respond_to do |format|
       format.html { redirect_to edit_media_object_path(@master_file.media_object_id, step: 'structure') }
-      format.json { render json: {structure: structure, flash: flash} }
+      format.json { render json: {structure: ERB::Util.html_escape(structure), flash: flash} }
     end
   end
 
@@ -128,19 +137,31 @@ class MasterFilesController < ApplicationController
     if flash.empty?
       authorize! :edit, @master_file, message: "You do not have sufficient privileges to add files"
       if params[:master_file].present? && params[:master_file][:captions].present?
-        captions = params[:master_file][:captions].open.read
+        captions_file = params[:master_file][:captions]
+        captions_ext = File.extname(captions_file.original_filename)
+        content_type = Mime::Type.lookup_by_extension(captions_ext.slice(1..-1)).to_s if captions_ext
+        if ["text/vtt", "text/srt"].include? content_type
+          captions = captions_file.open.read
+        else
+          flash[:error] = "Uploaded file is not a recognized captions file"
+        end
       end
       if captions.present?
         @master_file.captions.content = captions
-        @master_file.captions.mime_type = params[:master_file][:captions].content_type
+        @master_file.captions.mime_type = content_type
         @master_file.captions.original_name = params[:master_file][:captions].original_filename
         flash[:success] = "Captions file succesfully added."
-      else
+      elsif !captions_file.present?
         @master_file.captions.content = ''
         @master_file.captions.original_name = ''
         flash[:success] = "Captions file succesfully removed."
       end
-      @master_file.save
+      if flash[:error].blank?
+        unless @master_file.save
+          flash[:success] = nil
+          flash[:error] = "There was a problem storing the file"
+        end
+      end
     end
     respond_to do |format|
       format.html { redirect_to edit_media_object_path(@master_file.media_object_id, step: 'structure') }
@@ -162,71 +183,19 @@ class MasterFilesController < ApplicationController
     media_object = MediaObject.find(params[:container_id])
     authorize! :edit, media_object, message: "You do not have sufficient privileges to add files"
 
-    format_errors = "The file was not recognized as audio or video - "
+    unless media_object.valid?
+      flash[:error] = "MediaObject is invalid.  Please add required fields."
+      redirect_to :back
+      return
+    end
 
-    if params.has_key?(:Filedata) and params.has_key?(:original)
-      @master_files = []
-      params[:Filedata].each do |file|
-        if (file.size > MasterFile::MAXIMUM_UPLOAD_SIZE)
-          # Use the errors key to signal that it should be a red notice box rather
-          # than the default
-          flash[:error] = "The file you have uploaded is too large"
-          return redirect_to :back
-        end
-
-        unless file.original_filename.valid_encoding? && file.original_filename.ascii_only?
-          flash[:error] = 'The file you have uploaded has non-ASCII characters in its name.'
-          return redirect_to :back
-        end
-
-        master_file = MasterFile.new()
-        master_file.setContent(file)
-        master_file.set_workflow(params[:workflow])
-        # master_file.media_object = media_object
-        # master_file.save!
-
-        if 'Unknown' == master_file.file_format
-          flash[:error] = [] if flash[:error].nil?
-          error = format_errors
-          error << file.original_filename
-          error << " (" << file.content_type << ")"
-          flash[:error].push error
-          master_file.destroy
-          next
-        else
-          flash[:notice] = create_upload_notice(master_file.file_format)
-        end
-
-        master_file.media_object = media_object
-        unless master_file.save
-          flash[:error] = "There was a problem storing the file"
-        else
-          media_object.save
-          master_file.process
-          @master_files << master_file
-        end
-
-      end
-    elsif params.has_key?(:selected_files)
-      @master_files = []
-      params[:selected_files].each_value do |entry|
-        file_path = URI.parse(entry[:url]).path.gsub(/\+/,' ')
-        master_file = MasterFile.new
-        master_file.setContent(File.open(file_path, 'rb'))
-        master_file.set_workflow(params[:workflow])
-        master_file.save( validate: false )
-        master_file.media_object = media_object
-
-        unless master_file.save
-          flash[:error] = "There was a problem storing the file"
-        else
-          media_object.save
-          master_file.process
-          @master_files << master_file
-        end
-      end
-    else
-      flash[:notice] = "You must specify a file to upload"
+    begin
+      result = MasterFileBuilder.build(media_object, params)
+      @master_files = result[:master_files]
+      [:notice, :error].each { |type| flash[type] = result[:flash][type] }
+    rescue MasterFileBuilder::BuildError => err
+      flash[:error] = err.message
+      return redirect_to :back
     end
 
     respond_to do |format|
@@ -239,7 +208,8 @@ class MasterFilesController < ApplicationController
   def destroy
     master_file = MasterFile.find(params[:id])
     authorize! :destroy, master_file, message: "You do not have sufficient privileges to delete files"
-    filename = File.basename(master_file.file_location) || master_file.id
+    filename = File.basename(master_file.file_location) if master_file.file_location.present?
+    filename ||= master_file.id
     media_object = MediaObject.find(master_file.media_object_id)
     media_object.ordered_master_files.delete(master_file)
     media_object.master_files.delete(master_file)
@@ -272,14 +242,19 @@ class MasterFilesController < ApplicationController
     master_file = MasterFile.find(params[:id])
     mimeType = "image/jpeg"
     content = if params[:offset]
-      authorize! :edit, master_file, message: "You do not have sufficient privileges to view this file"
+      authorize! :edit, master_file, message: "You do not have sufficient privileges to edit this file"
       opts = { :type => params[:type], :size => params[:size], :offset => params[:offset].to_f*1000, :preview => true }
       master_file.extract_still(opts)
     else
       authorize! :read, master_file, message: "You do not have sufficient privileges to view this file"
-      ds = master_file.send(params[:type].to_sym)
-      mimeType = ds.mime_type
-      ds.content
+      whitelist = ["thumbnail", "poster"]
+      if whitelist.include? params[:type]
+        ds = master_file.send(params[:type].to_sym)
+        mimeType = ds.mime_type
+        ds.content
+      else
+        nil
+      end
     end
     unless content
       redirect_to ActionController::Base.helpers.asset_path('video_icon.png')
@@ -289,18 +264,6 @@ class MasterFilesController < ApplicationController
   end
 
 protected
-  def create_upload_notice(format)
-    case format
-      when /^Sound$/
-       text = 'The uploaded content appears to be audio';
-      when /^Moving image$/
-       text = 'The uploaded content appears to be video';
-      else
-       text = 'The uploaded content could not be identified';
-      end
-    return text
-  end
-
   def ensure_readable_filedata
     if params[:Filedata].present?
       params[:Filedata].each do |file|

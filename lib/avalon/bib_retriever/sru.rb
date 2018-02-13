@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -24,14 +24,18 @@ module Avalon
       end
       
       def get_record(bib_id)
-        doc = Nokogiri::XML RestClient.get(url_for(bib_id))
-        record = doc.xpath('//zs:recordData/*', "zs"=>@config['namespace']).first
-        record.nil? ? nil : marcxml2mods(record.to_s)
+        # multiple queries specified as an Array in the config will run each in sequence until a record is found
+        Array(config['query']).each do |query|
+          doc = Nokogiri::XML RestClient.get(url_for(query, bib_id))
+          record = doc.xpath('//zs:recordData/*', "zs"=>@config['namespace']).first
+          return marcxml2mods(record.to_s) if record.present?
+        end
+        nil
       end
       
-      def url_for(bib_id)
+      def url_for(query, bib_id)
         uri = URI.parse config['url']
-        query_param = URI.encode(config['query'] % { bib_id: bib_id.to_s })
+        query_param = URI.encode(query % { bib_id: bib_id.to_s })
         uri.query = "version=1.1&operation=searchRetrieve&maximumRecords=1&recordSchema=marcxml&query=#{query_param}"
         uri.to_s
       end

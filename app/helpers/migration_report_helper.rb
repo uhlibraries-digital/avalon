@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -15,6 +15,7 @@
 module MigrationReportHelper
   def status_link(klass, display_name, status_name=display_name)
     params = { class: klass, status: status_name }.reject { |k,v| v.nil? }
+    params.delete(:status) if status_name == 'total'
     link_to @counts[klass][status_name].to_i, admin_migration_report_by_class_path(params)
   end
   

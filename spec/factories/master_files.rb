@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -18,7 +18,7 @@ FactoryGirl.define do
     file_format {'Moving image'}
     percent_complete {"#{rand(100)}"}
     workflow_name 'avalon'
-    duration {'100'}
+    duration {'200000'}
 
     trait :with_media_object do
       association :media_object #, factory: :media_object
@@ -35,6 +35,13 @@ FactoryGirl.define do
       after(:create) do |mf|
         mf.thumbnail.mime_type = 'image/jpeg'
         mf.thumbnail.content = 'fake image content'
+        mf.save
+      end
+    end
+    trait :with_poster do
+      after(:create) do |mf|
+        mf.poster.mime_type = 'image/jpeg'
+        mf.poster.content = 'fake image content'
         mf.save
       end
     end

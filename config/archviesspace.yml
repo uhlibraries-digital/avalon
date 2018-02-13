@@ -1,0 +1,5 @@
+development:
+  frontend: http://fatest.lib.uh.edu
+  endpoint: http://fatest.lib.uh.edu:8089
+  username: scripke
+  password: a3sF926mHn

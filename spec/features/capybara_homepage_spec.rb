@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -25,7 +25,7 @@ describe 'homepage' do
     page.should have_content('Featured Audio')
     page.should have_link('Avalon Media System Project Website')
     page.should have_link('Contact Us')
-    page.should have_content('Avalon Media System Release 6.0')
+    page.should have_content('Avalon Media System Release')
     page.should have_content('Search')
   end
   it 'validates absence of features when not logged in' do
@@ -74,7 +74,7 @@ describe 'checks navigation to external links' do
     page.should have_link('Manage Selected Items')
     page.should have_link('Playlists')
     page.should have_link('Sign out')
-    page.should have_content(user.username)
+    page.should have_content(user.user_key)
   end
 end
 

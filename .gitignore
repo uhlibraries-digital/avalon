@@ -19,6 +19,7 @@
 .byebug_history
 
 ## PROJECT::SPECIFIC
+config/archivesspace.yml
 config/authentication.yml
 config/avalon.yml
 config/blacklight.yml
@@ -32,6 +33,10 @@ config/initializers/rubyhorn.rb
 config/secrets.yml
 config/solr.yml
 config/lti.yml
+
+config/settings/development.yml
+config/settings/production.yml
+config/settings/test.yml
 
 public/media_objects
 public/streams

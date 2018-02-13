@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -52,12 +52,14 @@ describe MediaObjectsController, type: :controller do
           expect(get :show_progress, id: media_object.id, format: 'json').to have_http_status(401)
           expect(get :edit, id: media_object.id).to redirect_to(new_user_session_path)
           expect(get :confirm_remove, id: media_object.id).to redirect_to(new_user_session_path)
-          expect(post :create).to redirect_to(new_user_session_path)
+          #expect(post :create).to redirect_to(new_user_session_path) # route accessible by json only
           expect(put :update, id: media_object.id).to redirect_to(new_user_session_path)
           expect(put :update_status, id: media_object.id).to redirect_to(new_user_session_path)
           expect(get :tree, id: media_object.id).to redirect_to(new_user_session_path)
           expect(get :deliver_content, id: media_object.id, file: 'descMetadata').to redirect_to(new_user_session_path)
           expect(delete :destroy, id: media_object.id).to redirect_to(new_user_session_path)
+          expect(get :add_to_playlist_form, id: media_object.id).to redirect_to(new_user_session_path)
+          expect(post :add_to_playlist, id: media_object.id).to redirect_to(new_user_session_path)
         end
       end
       context 'with end-user' do
@@ -73,12 +75,14 @@ describe MediaObjectsController, type: :controller do
           expect(get :show_progress, id: media_object.id, format: 'json').to redirect_to(root_path)
           expect(get :edit, id: media_object.id).to redirect_to(root_path)
           expect(get :confirm_remove, id: media_object.id).to redirect_to(root_path)
-          expect(post :create).to redirect_to(root_path)
+          #expect(post :create).to redirect_to(root_path) # route accessible by json only
           expect(put :update, id: media_object.id).to redirect_to(root_path)
           expect(put :update_status, id: media_object.id).to redirect_to(root_path)
           expect(get :tree, id: media_object.id).to redirect_to(root_path)
           expect(get :deliver_content, id: media_object.id, file: 'descMetadata').to redirect_to(root_path)
           expect(delete :destroy, id: media_object.id).to redirect_to(root_path)
+          expect(get :add_to_playlist_form, id: media_object.id).to redirect_to(root_path)
+          expect(post :add_to_playlist, id: media_object.id).to redirect_to(root_path)
         end
       end
     end
@@ -206,7 +210,7 @@ describe MediaObjectsController, type: :controller do
           expect(new_media_object.master_files.first.derivatives.count).to eq(2)
           expect(new_media_object.master_files.first.derivatives.first.location_url).to eq(absolute_location)
           expect(new_media_object.workflow.last_completed_step).to eq([HYDRANT_STEPS.last.step])
-       end
+        end
         it "should create a new published media_object" do
           media_object = FactoryGirl.create(:published_media_object)
           fields = {}
@@ -217,10 +221,10 @@ describe MediaObjectsController, type: :controller do
           new_media_object = MediaObject.find(JSON.parse(response.body)['id'])
           expect(new_media_object.published?).to be_truthy
           expect(new_media_object.workflow.last_completed_step).to eq([HYDRANT_STEPS.last.step])
-       end
+        end
         it "should create a new media_object with successful bib import" do
-          Avalon::Configuration['bib_retriever'] = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
-          FakeWeb.register_uri :get, sru_url, body: sru_response
+          Settings.bib_retriever = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
+          stub_request(:get, sru_url).to_return(body: sru_response)
           fields = { bibliographic_id: bib_id }
           post 'create', format: 'json', import_bib_record: true, fields: fields, files: [master_file], collection_id: collection.id
           expect(response.status).to eq(200)
@@ -229,8 +233,8 @@ describe MediaObjectsController, type: :controller do
           expect(new_media_object.title).to eq('245 A : B F G K N P S')
         end
         it "should create a new media_object with supplied fields when bib import fails" do
-          Avalon::Configuration['bib_retriever'] = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
-          FakeWeb.register_uri :get, sru_url, body: nil
+          Settings.bib_retriever = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
+          stub_request(:get, sru_url).to_return(body: nil)
           ex_media_object = FactoryGirl.create(:media_object)
           fields = {}
           descMetadata_fields.each {|f| fields[f] = ex_media_object.send(f) }
@@ -265,8 +269,8 @@ describe MediaObjectsController, type: :controller do
           expect(new_media_object.copyright_date).to eq nil
         end
         it "should merge supplied other identifiers after bib import" do
-          Avalon::Configuration['bib_retriever'] = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
-          FakeWeb.register_uri :get, sru_url, body: sru_response
+          Settings.bib_retriever = { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db' }
+          stub_request(:get, sru_url).to_return(body: sru_response)
           fields = { bibliographic_id: bib_id, other_identifier_type: ['other'], other_identifier: ['12345'] }
           post 'create', format: 'json', import_bib_record: true, fields: fields, files: [master_file], collection_id: collection.id
           expect(response.status).to eq(200)
@@ -385,6 +389,19 @@ describe MediaObjectsController, type: :controller do
         get :edit, {id: media_object.id, step: 'resource-description'}
         expect(response.response_code).to eq(200)
       end
+      it "does not persist invalid media object after resource-description step" do
+        media_object.workflow.last_completed_step = 'resource-description'
+        media_object.save
+        login_user media_object.collection.managers.first
+
+        put :update, {id: media_object.id, step: 'resource-description', media_object: {title: '', date_issued: ''}}
+        expect(response.response_code).to eq(200)
+        expect(flash[:error]).not_to be_empty
+        media_object.reload
+        expect(media_object.valid?).to be_truthy
+        expect(media_object.title).not_to be_blank
+        expect(media_object.date_issued).not_to be_blank
+      end
     end
 
     context "Persisting Permalinks" do
@@ -480,6 +497,15 @@ describe MediaObjectsController, type: :controller do
     let!(:media_object) { FactoryGirl.create(:published_media_object, visibility: 'public') }
 
     context "Known items should be retrievable" do
+      context 'with fedora 3 pid' do
+        let!(:media_object) {FactoryGirl.create(:published_media_object, visibility: 'public', identifier: [fedora3_pid])}
+        let(:fedora3_pid) { 'avalon:1234' }
+
+        it "should redirect" do
+          expect(get :show, id: fedora3_pid).to redirect_to(media_object_url(media_object.id))
+        end
+      end
+
       it "should be accesible by its PID" do
         get :show, id: media_object.id
         expect(response.response_code).to eq(200)
@@ -498,12 +524,18 @@ describe MediaObjectsController, type: :controller do
       end
 
       it "should provide a JSON stream description to the client" do
-        FactoryGirl.create(:master_file, media_object: media_object)
-        media_object.master_files.each { |part|
-          xhr :get, :show_stream_details, id: media_object.id, content: part.id
-          json_obj = JSON.parse(response.body)
-          expect(json_obj['is_video']).to eq(part.is_video?)
-        }
+        part = FactoryGirl.create(:master_file, media_object: media_object)
+        xhr :get, :show_stream_details, id: media_object.id, content: part.id
+        json_obj = JSON.parse(response.body)
+        expect(json_obj['is_video']).to eq(part.is_video?)
+        expect(json_obj['link_back_url']).to eq(Rails.application.routes.url_helpers.id_section_media_object_url(media_object, part))
+      end
+
+      it "should provide a JSON stream description with permalink to the client" do
+        part = FactoryGirl.create(:master_file, media_object: media_object, permalink: 'https://permalink.host/path/id')
+        xhr :get, :show_stream_details, id: media_object.id, content: part.id
+        json_obj = JSON.parse(response.body)
+        expect(json_obj['link_back_url']).to eq('https://permalink.host/path/id')
       end
 
       it "should choose the correct default master_file" do
@@ -522,16 +554,16 @@ describe MediaObjectsController, type: :controller do
       let!(:media_object) { FactoryGirl.create(:published_media_object, visibility: 'private') }
       let!(:user) { FactoryGirl.create(:user) }
       before :each do
-        login_user user.username
+        login_user user.user_key
       end
       it "should not be available to a user on an inactive lease" do
-        media_object.governing_policies+=[Lease.create(begin_time: Date.today-2.day, end_time: Date.yesterday, inherited_read_users: [user.username])]
+        media_object.governing_policies+=[Lease.create(begin_time: Date.today-2.day, end_time: Date.yesterday, inherited_read_users: [user.user_key])]
         media_object.save!
         get 'show', id: media_object.id
         expect(response.response_code).not_to eq(200)
       end
       it "should be available to a user on an active lease" do
-        media_object.governing_policies+=[Lease.create(begin_time: Date.yesterday, end_time: Date.tomorrow, inherited_read_users: [user.username])]
+        media_object.governing_policies+=[Lease.create(begin_time: Date.yesterday, end_time: Date.tomorrow, inherited_read_users: [user.user_key])]
         media_object.save!
         get 'show', id: media_object.id
         expect(response.response_code).to eq(200)
@@ -647,7 +679,7 @@ describe MediaObjectsController, type: :controller do
       context 'After sign in' do
         before do
           @user = FactoryGirl.create(:user)
-          @media_object = FactoryGirl.create(:media_object, visibility: 'private', read_users: [@user.username] )
+          @media_object = FactoryGirl.create(:media_object, visibility: 'private', read_users: [@user.user_key] )
         end
         it 'redirects to the previous url' do
         end
@@ -714,7 +746,7 @@ describe MediaObjectsController, type: :controller do
     it "should remove a MediaObject with a single MasterFiles" do
       media_object = FactoryGirl.create(:media_object, :with_master_file, collection: collection)
       delete :destroy, id: media_object.id
-      expect(flash[:notice]).to include("success")
+      expect(flash[:notice]).to include("being deleted")
       expect(MediaObject.exists?(media_object.id)).to be_falsey
       expect(MasterFile.exists?(media_object.master_files.first.id)).to be_falsey
     end
@@ -725,7 +757,7 @@ describe MediaObjectsController, type: :controller do
       master_file_ids = media_object.master_files.map(&:id)
       media_object.reload
       delete :destroy, id: media_object.id
-      expect(flash[:notice]).to include("success")
+      expect(flash[:notice]).to include("being deleted")
       expect(MediaObject.exists?(media_object.id)).to be_falsey
       master_file_ids.each { |mf_id| expect(MasterFile.exists?(mf_id)).to be_falsey }
     end
@@ -785,9 +817,14 @@ describe MediaObjectsController, type: :controller do
     end
 
     context 'publishing' do
-      before(:each) do
+      before(:all) do
         Permalink.on_generate { |obj| "http://example.edu/permalink" }
       end
+
+      after(:all) do
+        Permalink.on_generate { nil }
+      end
+
       it 'publishes media object' do
         media_object = FactoryGirl.create(:media_object, collection: collection)
         get 'update_status', id: media_object.id, status: 'publish'
@@ -875,14 +912,18 @@ describe MediaObjectsController, type: :controller do
       media_object = FactoryGirl.create(:media_object)
       media_object.ordered_master_files += [FactoryGirl.create(:master_file, :with_derivative)]
       media_object.set_media_types!
-      media_object.save( validate: false )
+      media_object.save
       media_object.reload
       expect(media_object.format).to eq(["video/mp4"])
     end
 
     context 'large objects' do
-      before(:each) do
+      before(:all) do
         Permalink.on_generate { |obj| sleep(0.5); "http://example.edu/permalink" }
+      end
+
+      after(:all) do
+        Permalink.on_generate { nil }
       end
 
       let!(:media_object) do
@@ -974,6 +1015,23 @@ describe MediaObjectsController, type: :controller do
         end
       end
     end
+
+    context 'resource description' do
+      context 'bib import' do
+        require 'avalon/bib_retriever'
+        let(:media_object) { FactoryGirl.create(:media_object) }
+        before do
+          login_as 'administrator'
+        end
+
+        it 'does nothing when the bib id is blank or missing' do
+          dbl = double("BibRetriever")
+          allow(Avalon::BibRetriever).to receive(:instance).and_return(dbl)
+          expect(dbl).not_to receive(:get_record)
+          put :update, id: media_object.id, step: 'resource-description', media_object: { import_bib_record: 'yes', bibliographic_id: ' ', bibliographic_id_label: 'local' }
+        end
+      end
+    end
   end
 
   describe "#show_progress" do
@@ -1004,4 +1062,74 @@ describe MediaObjectsController, type: :controller do
       expect(@request.session[:quality]).to eq('crazy_high')
     end
   end
+
+  describe "#add_to_playlist_form" do
+    let(:media_object) { FactoryGirl.create(:fully_searchable_media_object, :with_master_file) }
+
+    before do
+      login_as :user
+    end
+    it "should render add_to_playlist_form with correct masterfile_id" do
+      get :add_to_playlist_form, id: media_object.id, scope: 'master_file', masterfile_id: media_object.master_file_ids[0]
+      expect(response).to render_template(:_add_to_playlist_form)
+      expect(response.body).to include(media_object.master_file_ids[0])
+    end
+    it "should render the correct label for scope=master_file" do
+      get :add_to_playlist_form, id: media_object.id, scope: 'master_file', masterfile_id: media_object.master_file_ids[0]
+      expect(response.body).to include('Add Section to Playlist')
+    end
+    it "should render the correct label for scope=media_object" do
+      get :add_to_playlist_form, id: media_object.id, scope: 'media_object', masterfile_id: media_object.master_file_ids[0]
+      expect(response.body).to include('Add Item to Playlist')
+    end
+  end
+
+  describe "#add_to_playlist" do
+    let(:media_object) { FactoryGirl.create(:fully_searchable_media_object, title: 'Test Item') }
+    let(:master_file) { FactoryGirl.create(:master_file, media_object: media_object, title: 'Test Section') }
+    let(:master_file_with_structure) { FactoryGirl.create(:master_file, :with_structure, media_object: media_object) }
+    let(:user) { login_as :user }
+    let(:playlist) { FactoryGirl.create(:playlist, user: user) }
+
+    before do
+      media_object.ordered_master_files = [master_file, master_file_with_structure]
+    end
+
+    it "should create a single playlist_item for a single master_file" do
+      expect {
+        post :add_to_playlist, id: media_object.id, post: { playlist_id: playlist.id, masterfile_id: media_object.master_file_ids[0], playlistitem_scope: 'section' }
+      }.to change { playlist.items.count }.from(0).to(1)
+      expect(playlist.items[0].title).to eq("#{media_object.title} - #{media_object.ordered_master_files.to_a[0].title}")
+    end
+    it "should create playlist_items for each span in a single master_file's structure" do
+      expect {
+        post :add_to_playlist, id: media_object.id, post: { playlist_id: playlist.id, masterfile_id: media_object.master_file_ids[1], playlistitem_scope: 'structure' }
+      }.to change { playlist.items.count }.from(0).to(13)
+      expect(playlist.items[0].title).to eq("Test Item - CD 1 - Copland, Three Piano Excerpts from Our Town - Track 1. Story of Our Town")
+      expect(playlist.items[12].title).to eq("Test Item - CD 1 - Track 13. Copland, Danzon Cubano")
+    end
+    it "should create a single playlist_item for each master_file in a media_object" do
+      expect {
+        post :add_to_playlist, id: media_object.id, post: { playlist_id: playlist.id, playlistitem_scope: 'section' }
+      }.to change { playlist.items.count }.from(0).to(2)
+      expect(playlist.items[0].title).to eq(media_object.ordered_master_files.to_a[0].embed_title)
+      expect(playlist.items[1].title).to eq(media_object.ordered_master_files.to_a[1].embed_title)
+    end
+    it "should create playlist_items for each span in a master_file structures in a media_object" do
+      expect {
+        post :add_to_playlist, id: media_object.id, post: { playlist_id: playlist.id, playlistitem_scope: 'structure' }
+      }.to change { playlist.items.count }.from(0).to(14)
+      expect(response.response_code).to eq(200)
+      expect(playlist.items[0].title).to eq("#{media_object.title} - #{media_object.ordered_master_files.to_a[0].title}")
+      expect(playlist.items[13].title).to eq("Test Item - CD 1 - Track 13. Copland, Danzon Cubano")
+    end
+    it 'redirects with flash message when playlist is owned by another user' do
+      login_as :user
+      other_playlist = FactoryGirl.create(:playlist)
+      post :add_to_playlist, id: media_object.id, post: { playlist_id: other_playlist.id, masterfile_id: media_object.master_file_ids[0], playlistitem_scope: 'section' }
+      expect(response).to have_http_status(403)
+      expect(JSON.parse(response.body).symbolize_keys).to eq({message: "<p>You are not authorized to update this playlist.</p>", status: 403})
+    end
+  end
+
 end

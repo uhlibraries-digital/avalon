@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -57,8 +57,12 @@ timeCodeToSeconds = (hh_mm_ss) ->
   row.find('button[name="marker_edit_save"]').remove()
   row.find('button[name="delete_marker"]').show()
   row.find('button[name="marker_edit_cancel"]').remove()
-  $('.scrubber-marker[data-marker="'+id+'"]').css('left',Math.round(if isNaN(parseFloat(offset)) then 0 else (100*offset / currentPlayer.media.duration))+'%')
-  $('.scrubber-marker[data-marker="'+id+'"]').attr('title',title_val)
+  offset_percent = if isNaN(parseFloat(offset)) then 0 else Math.min(100,Math.round(100*offset / currentPlayer.media.duration))
+  marker_title = String(title_val).replace(/"/g, '&quot;')+' ['+start_input.val()+']'
+  $('.scrubber-marker[data-marker="'+id+'"]').css('left',offset_percent+'%').unbind('click').click (e) ->
+    currentPlayer.setCurrentTime offset
+  marker = $('.mejs-time-float-marker[data-marker="'+id+'"]')
+  marker.css('left',offset_percent+'%').find('.mejs-time-float-current-marker').text(marker_title)
   return
 
 @cancelMarkerEdit = (event) ->
@@ -83,6 +87,7 @@ timeCodeToSeconds = (hh_mm_ss) ->
   if response['action'] == 'destroy'
     #respond to destroy
     $('.scrubber-marker[data-marker="'+response['id']+'"]').remove()
+    $('.mejs-time-float-marker[data-marker="'+response['id']+'"]').remove()
     $('#marker_row_' + response['id']).remove()
     if $('.row .marker').length == 0
       $('#markers_heading').remove()

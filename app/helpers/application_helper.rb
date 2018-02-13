@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -15,7 +15,7 @@
 
 module ApplicationHelper
   def application_name
-    Avalon::Configuration.lookup('name') || 'Avalon Media System'
+    Settings.name || 'Avalon Media System'
   end
 
   def release_text
@@ -33,6 +33,17 @@ module ApplicationHelper
       when MasterFileBehavior then id_section_media_object_url(obj.media_object.id, obj.id)
       end
     end
+  end
+
+  def lti_share_url_for(obj, opts = {})
+    return I18n.t('share.empty_lti_share_url') if obj.nil?
+    target = case obj
+             when MediaObject then obj.id
+             when MasterFile then obj.id
+             when Playlist then obj.to_gid_param
+             end
+    opts.merge!(action: 'lti', target_id: target)
+    #user_omniauth_callback_url(opts)
   end
 
   # TODO: Fix me with latest changes from 5.1.4

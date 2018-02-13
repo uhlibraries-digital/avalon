@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -50,6 +50,21 @@ describe ApplicationHelper do
       expect(master_file.file_location).to be_nil
       expect(master_file.title).to be_nil
       expect(helper.stream_label_for(master_file)).to eq(master_file.id)
+    end
+  end
+
+  describe '.lti_share_url_for' do
+    it 'forms a proper lti share url for media objects' do
+      media_object = FactoryGirl.create(:media_object)
+      expect(helper.lti_share_url_for(media_object)).to eq "http://test.host/users/auth/lti/callback?target_id=#{media_object.id}"
+    end
+    it 'forms a proper lti share url for master files' do
+      master_file = FactoryGirl.create(:master_file)
+      expect(helper.lti_share_url_for(master_file)).to eq "http://test.host/users/auth/lti/callback?target_id=#{master_file.id}"
+    end
+    it 'forms a proper lti share url for playlists' do
+      playlist = FactoryGirl.create(:playlist)
+      expect(helper.lti_share_url_for(playlist)).to eq "http://test.host/users/auth/lti/callback?target_id=#{playlist.to_gid_param}"
     end
   end
 

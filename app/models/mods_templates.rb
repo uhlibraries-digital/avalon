@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -264,8 +264,8 @@ module ModsTemplates
         add_child_node(get_record_info, :_record_identifier, content, source)
       end
 
-      def add_record_identifier(content)
-        add_child_node(get_record_info, :_record_identifier, content, "Fedora")
+      def add_record_identifier(content, source="Fedora4")
+        add_child_node(get_record_info, :_record_identifier, content, source)
       end
 
     end

@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -194,6 +194,16 @@ describe Lease do
         lease.save
       }.to change{Lease.ip.count}.by(1)
       expect(lease.lease_type).to eq "ip"
+    end
+  end
+  describe '#media_objects' do
+    let(:media_object) { FactoryGirl.create(:media_object) }
+    before do
+      media_object.governing_policies += [ lease ]
+      media_object.save!
+    end
+    it 'lists media objects the lease applies to' do
+      expect(lease.media_objects).not_to be_empty
     end
   end
 end

@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 # 
@@ -39,15 +39,15 @@ module FedoraMigrate
 
     private
 
-      def locate_object(id)
+      def locate_object_id(id)
         return target if source.pid == id
-        ActiveFedora::Base.where(identifier_ssim: id).first
+        ActiveFedora::Base.where(identifier_ssim: id.downcase).first.try(:id)
       end
 
       def migrate_object(fc3_uri)
-        obj = locate_object(fc3_uri.to_s.split('/').last)
-        #FIXME raise error or return if obj.nil?
-        RDF::URI.new(ActiveFedora::Base.id_to_uri(obj.id))
+        obj_id = locate_object_id(fc3_uri.to_s.split('/').last)
+        #FIXME raise error or return if obj_id.nil?
+        RDF::URI.new(ActiveFedora::Base.id_to_uri(obj_id))
       end
 
       def predicate_blacklist
@@ -59,7 +59,7 @@ module FedoraMigrate
       end
       
       def missing_object?(statement)
-        return false if locate_object(statement.object.to_s.split('/').last).present?
+        return false if locate_object_id(statement.object.to_s.split('/').last).present?
         report << "could not migrate relationship #{statement.predicate} because #{statement.object} doesn't exist in Fedora 4" unless predicate_whitelist.include?(statement.predicate)
         true
       end

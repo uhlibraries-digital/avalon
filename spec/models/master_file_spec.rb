@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -302,24 +302,24 @@ describe MasterFile do
         }
 
         before(:each) do
-          @old_media_path = Avalon::Configuration.lookup('matterhorn.media_path')
+          @old_media_path = Settings.matterhorn.media_path
           FileUtils.mkdir_p media_path
           FileUtils.cp fixture, tempfile
         end
 
         after(:each) do
-          Avalon::Configuration['matterhorn']['media_path'] = @old_media_path
+          Settings.matterhorn.media_path = @old_media_path
           File.unlink subject.file_location
           FileUtils.rm_rf media_path
         end
 
         it "should rename an uploaded file in place" do
-          Avalon::Configuration['matterhorn'].delete('media_path')
+          Settings.matterhorn.media_path = nil
           expect(subject.file_location).to eq(File.realpath(File.join(File.dirname(tempfile),original)))
         end
 
         it "should copy an uploaded file to the media path" do
-          Avalon::Configuration['matterhorn']['media_path'] = media_path
+          Settings.matterhorn.media_path = media_path
           expect(subject.file_location).to eq(File.join(media_path,original))
         end
       end
@@ -380,16 +380,35 @@ describe MasterFile do
   end
 
   describe "#embed_title" do
-    subject { FactoryGirl.create( :master_file, { media_object: FactoryGirl.create( :media_object, { title: "test" })})}
+    context "with structure" do
+      subject { FactoryGirl.create( :master_file, :with_structure, { media_object: FactoryGirl.create( :media_object, { title: "test" })})}
 
-    it "should have an appropriate title for the embed code with no label" do
-      expect( subject.embed_title ).to eq( "test - video.mp4" )
+      it "should favor the structure item label" do
+        expect( subject.embed_title ).to eq( "test - CD 1" )
+      end
     end
 
-    it "should have an appropriate title for the embed code with a label" do
-      subject.title = "test"
+    context "without structure" do
+      subject { FactoryGirl.create( :master_file, { media_object: FactoryGirl.create( :media_object, { title: "test" })})}
 
-      expect( subject.embed_title ).to eq( "test - test" )
+      it "should have an appropriate title for the embed code with a label" do
+        subject.title = "test"
+        expect( subject.embed_title ).to eq( "test - test" )
+      end
+
+      it "should have an appropriate title for the embed code with no label (only one section)" do
+        expect( subject.embed_title ).to eq( "test" )
+      end
+
+      it 'should have an appropriate title for the embed code with no label (more than 1 section)' do
+        allow(subject.media_object).to receive(:ordered_master_files).and_return([subject,subject])
+        expect( subject.embed_title ).to eq( 'test - video.mp4' )
+      end
+
+      it "should have an appropriate title for the embed code with no label or file_location" do
+        subject.file_location = nil
+        expect( subject.embed_title ).to eq( "test" )
+      end
     end
   end
 
@@ -471,6 +490,42 @@ describe MasterFile do
     end
     it "raises an exception when ffmpeg doesn't extract anything" do
       expect {video_master_file.send(:extract_frame, {size: '160x120', offset: 1})}.to raise_error(RuntimeError)
+    end
+  end
+
+  describe 'poster' do
+    let(:master_file) { FactoryGirl.create(:master_file) }
+    it 'sets original_name to default value' do
+      expect(master_file.poster.original_name).to eq 'poster.jpg'
+    end
+  end
+
+  describe 'thumbnail' do
+    let(:master_file) { FactoryGirl.create(:master_file) }
+    it 'sets original_name to default value' do
+      expect(master_file.thumbnail.original_name).to eq 'thumbnail.jpg'
+    end
+  end
+
+  describe 'structuralMetadata' do
+    let(:master_file) { FactoryGirl.create(:master_file) }
+    it 'sets original_name to default value' do
+      expect(master_file.structuralMetadata.original_name).to eq 'structuralMetadata.xml'
+    end
+  end
+
+  describe 'update_parent!' do
+    it 'does not error if the master file has no parent' do
+      expect { MasterFile.new.send(:update_parent!) }.not_to raise_error
+    end
+  end
+
+  describe 'stop_processing!' do
+    before do
+      allow(ActiveEncode::Base).to receive(:find).and_return(nil)
+    end
+    it 'does not error if the master file has no encode' do
+      expect { MasterFile.new(workflow_id: '1', status_code: 'RUNNING').send(:stop_processing!) }.not_to raise_error
     end
   end
 end

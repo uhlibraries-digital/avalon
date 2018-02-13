@@ -738,11 +738,6 @@ button.close {
   }
 }
 
-.fileinput-submit {
-  z-index: $zindex-modal !important;
-  #background-color: $gray;
-}
-
 .ev-browser {
   background-color: $white;
 }
@@ -859,13 +854,11 @@ a[data-trigger='submit'] {
 }
 
 .fileinput-submit {
-  background-color: $blue !important;
-  border-color: $blue !important;
+  background-color: $uhRed !important;
+  border-color: $uhRed !important;
+  color: $white !important;
   &:hover {
-    background-color: darken($blue, 15%) !important;
-  }
-  a[data-trigger='submit']{
-    color: $white !important;
+    background-color: darken($uhRed, 15%) !important;
   }
 }
 
@@ -1350,4 +1343,61 @@ h5.panel-title {
 
 .twitter-typeahead {
   z-index: auto !important;
+}
+
+/**
+ * Associated Files - Edit - Manage Files
+ */
+#associated_files {
+ margin-bottom: 2rem;
+
+ label {
+   margin-bottom: 1px;
+ }
+
+ .associated-files-block {
+   background: #efefef;
+   margin-bottom: 20px;
+   padding: 10px 15px 10px 15px;
+ }
+
+ .associated-files-top-row {
+   display: flex;
+   justify-content: flex-start;
+   font-size: 18px;
+   padding-bottom: 10px;
+
+   > span {
+     padding: 0 5px;
+   }
+   .delete {
+     margin-left: auto;
+     padding: 0;
+   }
+ }
+
+ .associated-files-wrapper {
+   input {
+     @extend .form-control;
+     padding: 3px 6px;
+     height: auto;
+   }
+ }
+}
+
+// Fixes the input displaying over the dropdown datepicker calendar
+.fileinput {
+  position: relative;
+  z-index: 1;
+}
+
+/* MediaObject structure page */
+.structure_add_to_playlist {
+  float: right;
+  height: 1.5em;
+  background: $uhRed image-url('add_to_playlist_icon.svg') no-repeat;
+  background-position: 3px 0px;
+  border-color: $uhRed !important;
+  margin-top: -2px;
+  margin-left: 2px;
 }

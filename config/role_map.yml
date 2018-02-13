@@ -1,10 +1,10 @@
 development:
   administrator:
-    - archivist1@example.com
+    - slwatkins@uh.edu
   manager:
-    - archivist1@example.com
+    - slwatkins@uh.edu
   group_manager:
-    - archivist1@example.com
+    - slwatkins@uh.edu
 
 test:
   administrator:
@@ -16,3 +16,9 @@ test:
 
 production:
   # Add roles for users here.
+  administrator:
+    - <%= Settings.initial_user %>
+  manager:
+    - <%= Settings.initial_user %>
+  group_manager:
+    - <%= Settings.initial_user %>

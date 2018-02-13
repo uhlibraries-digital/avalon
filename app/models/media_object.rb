@@ -1,4 +1,4 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -21,6 +21,7 @@ class MediaObject < ActiveFedora::Base
   include Avalon::Workflow::WorkflowModelMixin
   include Permalink
   include Identifier
+  include MigrationTarget
   include SpeedyAF::OrderedAggregationIndex
   require 'avalon/controlled_vocabulary'
 
@@ -29,8 +30,9 @@ class MediaObject < ActiveFedora::Base
   has_and_belongs_to_many :governing_policies, class_name: 'ActiveFedora::Base', predicate: ActiveFedora::RDF::ProjectHydra.isGovernedBy
   belongs_to :collection, class_name: 'Admin::Collection', predicate: ActiveFedora::RDF::Fcrepo::RelsExt.isMemberOfCollection
 
-  before_save :update_dependent_properties!
-  before_save :update_permalink, if: Proc.new { |mo| mo.persisted? && mo.published? }
+  before_save :update_dependent_properties!, prepend: true
+  before_save :update_permalink, if: Proc.new { |mo| mo.persisted? && mo.published? }, prepend: true
+  before_save :assign_id!, prepend: true
   after_save :update_dependent_permalinks_job, if: Proc.new { |mo| mo.persisted? && mo.published? }
   after_save :remove_bookmarks
 
@@ -54,7 +56,7 @@ class MediaObject < ActiveFedora::Base
   validate  :report_missing_attributes, if: :resource_description_active?
 
   def resource_description_active?
-    workflow.active?("resource-description")
+    workflow.completed?("file-upload")
   end
 
   def validate_note_type
@@ -70,10 +72,17 @@ class MediaObject < ActiveFedora::Base
   end
 
   def validate_dates
-    [:date_created, :date_issued, :copyright_date].each do |d|
-      if self.send(d).present? && Date.edtf(self.send(d)).nil?
-        errors.add(d, I18n.t("errors.messages.dateformat", date: self.send(d)))
-      end
+    validate_date :date_created
+    validate_date :date_issued
+    validate_date :copyright_date
+  end
+
+  def validate_date(date_field)
+    date = send(date_field)
+    return if date.blank?
+    edtf_date = Date.edtf(date)
+    if edtf_date.nil? || edtf_date.class == EDTF::Unknown # remove second condition to allow 'uuuu'
+      errors.add(date_field, I18n.t("errors.messages.dateformat", date: date))
     end
   end
 
@@ -215,6 +224,7 @@ class MediaObject < ActiveFedora::Base
       solr_doc["section_label_tesim"] = section_labels
       solr_doc['section_physical_description_ssim'] = section_physical_descriptions
       solr_doc['avalon_resource_type_ssim'] = self.avalon_resource_type.map(&:titleize)
+      solr_doc['identifier_ssim'] = self.identifier.map(&:downcase)
 
       #Add all searchable fields to the all_text_timv field
       all_text_values = []
@@ -257,6 +267,10 @@ class MediaObject < ActiveFedora::Base
   # validate against a known controlled vocabulary. This one will take some thought
   # and research as opposed to being able to just throw something together in an ad hoc
   # manner
+
+  def assign_id!
+    self.id = assign_id if self.id.blank?
+  end
 
   def update_permalink
     ensure_permalink!

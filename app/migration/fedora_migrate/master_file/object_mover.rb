@@ -1,11 +1,11 @@
-# Copyright 2011-2017, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -59,25 +59,29 @@ module FedoraMigrate
       def migrate_transcoding_metadata
         return unless source.datastreams.keys.include?(MH_METADATA_DATASTREAM)
         mover = FedoraMigrate::MasterFile::MhMetadataDatastreamMover.new(source.datastreams[MH_METADATA_DATASTREAM], target)
-        mover.migrate
+        result = mover.migrate
+        if target.workflow_name.nil? || (not ::MasterFile::WORKFLOWS.include?(target.workflow_name))
+          target.workflow_name = target.file_format == 'Sound' ? 'fullaudio' : 'avalon'
+        end
+        result
       end
 
       def migrate_poster_and_thumbnail
-        migrate_content_datastream(POSTER_DATASTREAM, target.poster)
-        migrate_content_datastream(THUMBNAIL_DATASTREAM, target.thumbnail)
+        migrate_content_datastream(POSTER_DATASTREAM, target.poster, "#{POSTER_DATASTREAM}.jpg")
+        migrate_content_datastream(THUMBNAIL_DATASTREAM, target.thumbnail, "#{THUMBNAIL_DATASTREAM}.jpg")
       end
 
       def migrate_structural_metadata
-        migrate_content_datastream(STRUCTURAL_METADATA_DATASTREAM, target.structuralMetadata)
+        migrate_content_datastream(STRUCTURAL_METADATA_DATASTREAM, target.structuralMetadata, "#{STRUCTURAL_METADATA_DATASTREAM}.xml")
       end
 
       def migrate_captions
-        migrate_content_datastream(CAPTIONS_DATASTREAM, target.captions)
+        migrate_content_datastream(CAPTIONS_DATASTREAM, target.captions, source.datastreams[CAPTIONS_DATASTREAM].label.try(:gsub, /"/, '\"'))
       end
 
       def migrate_file_location
         return unless source.datastreams.keys.include?(MASTERFILE_DATASTREAM)
-        target.masterFile = source.datastreams[MASTERFILE_DATASTREAM].content
+        target.masterFile = source.datastreams[MASTERFILE_DATASTREAM].content.to_s.force_encoding(Encoding.default_external)
       end
 
       def migrate_title
@@ -86,8 +90,10 @@ module FedoraMigrate
       end
 
       private
-      def migrate_content_datastream(ds_name, target_file)
+      def migrate_content_datastream(ds_name, target_file, filename)
         return unless source.datastreams.keys.include?(ds_name)
+        # Manually set ebucore:filename before the file gets persisted
+        target_file.original_name = filename
         mover = FedoraMigrate::DatastreamMover.new(source.datastreams[ds_name], target_file)
         mover.migrate
         #report.content_datastreams << ContentDatastreamReport.new(target.attached_files[ds_name], mover.migrate)
