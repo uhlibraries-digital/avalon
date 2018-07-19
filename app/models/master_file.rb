@@ -511,7 +511,7 @@ class MasterFile < ActiveFedora::Base
 
     source = FileLocator.new(file_location)
     options[:master] = true
-    if source.source.nil? or (source.uri.scheme == 's3' and not source.exist?)
+    if source.source.nil? or source.source.empty? or (source.uri.scheme == 's3' and not source.exist?)
       source = FileLocator.new(self.derivatives.where(quality_ssi: 'high').first.absolute_location)
       options[:master] = false
     end
