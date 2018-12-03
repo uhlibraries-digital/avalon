@@ -19,11 +19,13 @@
 //@import "bootstrap-responsive";
 
 html {
-  background: #333;
+  background: $uhDark;
+  font-size: 16px;
 }
 
 body {
   font-family: $sansFontFamily;
+  font-size: 18px;
 }
 
 a {
@@ -140,7 +142,7 @@ tr.active-false td {
 }
 
 .navbar {
-  padding: .5em 0;
+  height: 48px;
   background-color: $darkRed;
   min-height: 0px;
   margin: 0 -16px;
@@ -150,12 +152,19 @@ tr.active-false td {
   a:not(.btn),
   a:not(.btn):hover {
     color: $yellow;
+    line-height: 3rem;
+    padding: 0 1rem 0 1rem;
+    font-weight: bold;
+    height: 3rem;
+  }
+
+  .container {
+    padding: 0 1rem 0 2rem;
+    background-color: $uhBrick;
   }
 
   @media (max-width: $screen-xs-max) {
-    background-color: $uhRed;
-    padding-left: 10px;
-    padding-right: 10px;
+    
   }
 
 }
@@ -188,11 +197,28 @@ tr.active-false td {
 }
 .navbar-inverse .navbar-toggle {
   margin: 9px 15px 9px 0;
-  border: none;
+  border: 1px solid $uhCream;
+  border-radius: 4px;
+
+  .navbar-toggle-hamburger {
+    float: left;
+  }
+
+  .navbar-text {
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-left: 5px;
+    vertical-align: top;
+    font-size: 14px;
+    line-height: 14px;
+    float: left;
+    color: $uhCream;
+  }
 
   &:hover,
   &:focus {
-    background-color: $uhRed;
+    background-color: transparent;
+    border-color: $uhCream;
   }
 
   .icon-bar {
@@ -327,67 +353,154 @@ input[type="text"]#admin_group {
 }
 
 /* Header */
-.custom-header {
-  background-color: $headerBackgroundColor;
-  color: $black;
-  padding: 0 30px;
-  margin-bottom: 0em;
-  font-size: .8em;
-  @extend .mobile-hidden;
-  .row {
-    margin: 0;
+.uhl-header {
+  margin: 0 auto;
+  padding: 0;
+  height: auto;
+  position: relative;
+  width: 100%;
+  max-width: 1920px;
+  background-color: $uhRed;
+  display: flex;
+
+  a:not(.btn),
+  a:not(.btn):visited,
+  a:not(.btn):hover {
+    color: $uhWhite;
+    text-decoration: none;
   }
-  .logo {
-    padding: 25px 0 15px 24px;
+
+  .content {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .header-links {
+    width: 100%;
+    position: relative;
+    flex-direction: row;
+    flex-grow: 1;
+    
+    .content {
+      width: 100%;
+      max-width: 14400px;
+      padding: 0 2.5rem;
+      text-align: right;
+
+      .uhlib-logo {
+        background: transparent;
+        height: 48px;
+        position: relative;
+        width: auto;
+        float: left;
+
+        a:not(.btn) {
+          display: inline;
+        }
+
+        img {
+          height: 100%;
+          padding: 10px 0;
+
+          @media (max-width: $screen-xs-max) {
+            max-width: 100%;
+          }
+        }
+      }
+    }
+  }
+
+  .site-name {
+    background-color: $uhBrick;
+    color: $uhWhite;
+    line-height: calc(1em + 3px);
+    padding: 10px 0;
+
+    .content {
+      width: 100%;
+      max-width: 1400px;
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+
+      h1 {
+        margin: 0;
+        padding: 0;
+        text-transform: none;
+        font-family: 'League Gothic', sans-serif;
+        font-size: calc(22px + (44 - 22) * (100vw - 320px) / (992 - 320));
+      }
+    }
+  }
+}
+
+.uhlib-links {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  margin-left: auto;
+  justify-content: flex-end;
+  height: 48px;
+
+  ul {
+    margin-top: 9px;
+    margin-bottom: 9px;
+    list-style: none;
+    padding: 0;
+    font-size: .875rem;
+    font-family: 'Milo', sans-serif;
+    white-space: nowrap;
+    max-width: 100%;
+    
+    @media (max-width: $screen-xs-max) {
+      display: none;
+    }
+
+    li {
+      display: inline;
+      color: $uhGold;
+    }
 
     a:not(.btn) {
+      font-weight: 400;
+      color: $uhCream;
+      padding: 0 10px;
+      line-height: 30px;
       display: inline-block;
-    }
+      vertical-align: middle;
+      border-radius: 15px;
+      transition: color .25s ease;
 
-    img {
-      width: auto;
-      height: 85px;
-    }
-    @media(max-width: $screen-sm-max) {
-      text-align: center;
+      &:hover,
+      &:visited {
+        text-decoration: none;
+        color: $uhCream;
+      }
+
+      &::before {
+        font-family: 'FontAwesome';
+        margin-right: 5px;
+      }
+
+      &.contact::before {
+        content: "\f075";
+      }
+
+      &.accounts::before {
+        content: "\f2bd";
+      }
+
+      &.giving {
+        svg {
+          width: 20px;
+          height: 20px;
+          fill: currentColor;
+          vertical-align: middle;
+          position: relative;
+          margin-right: 5px;
+        }
+      }
     }
   }
-}
-
-a:not(.btn) {
-  &.application-name {
-    font-family: 'League Gothic', sans-serif;
-    font-size: 48px;
-    color: white;
-    text-align: right;
-    line-height: 48px;
-    display: inline-block;
-    text-decoration: none;
-    margin: 45px 0 5px;
-    float: right;
-
-    @media(max-width: $screen-sm-max) {
-      margin: 0;
-      text-align: center;
-      float: none;
-      display: block;
-    }
-  }
-}
-
-#header-navbar .navbar-brand {
-  background-image: asset-url('UHL-white-single.svg');
-  width: 80%;
-  height: 100%;
-  background-size: contain;
-  background-position: left;
-  margin-right: 0;
-}
-
-
-header div{
-  padding: 1em;
-  @extend .mobile-hidden;
 }
 
 .page-content {
@@ -424,19 +537,19 @@ header div{
 }
 
 .avalon-search-query-form .search-query {
-  font-family: Arial,Helvetica,sans-serif;
-  font-size: 13px;
-  font-weight: normal;
-  line-height: 1;
+  font: 15px 'Milo','arial', 'helvetica', 'clean', 'sans-serif';
   margin-bottom: 0;
-  padding: 4px 14px;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
-  transition: border 0.2s linear 0s, box-shadow 0.2s linear 0s;
-  height: 25px;
-  width: 100%;
+  padding: 0px 0 0px 10px;
+  background-color: $uhWhite;
+  border: 0;
+  height: 30px;
+  width: 300px;
   vertical-align: middle;
+  border-radius: 3px;
+
+  @media (max-width: $screen-xs-max) {
+    width: 100%;
+  }
 }
 
 /* Sidebar */
@@ -514,6 +627,7 @@ footer {
       color: $white;
       cursor: pointer;
       text-decoration: none;
+      font-size: 1rem;
     }
 
     .footer-inner {
@@ -551,9 +665,9 @@ footer {
   }
 
   .global-footer {
-    background-color: #54585A;
+    background-color: $uhSlate;
     color: white;
-    font-size: 14px;
+    font-size: .875rem;
     padding: 1em 0;
     width: 100%;
     height: auto;
@@ -567,6 +681,7 @@ footer {
         color: $yellow;
         text-decoration: none;
         transition: color .25s ease;
+        font-size: .875rem;
       }
 
       a:not(.btn):hover {
