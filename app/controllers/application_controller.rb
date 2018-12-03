@@ -53,7 +53,7 @@ class ApplicationController < ActionController::Base
     if request.env['QUERY_STRING']['login_popup'].present?
       root_path + "self_closing.html"
     else
-      request.env['omniauth.origin'] || stored_location_for(resource) || session[:previous_url] || root_path
+      request.env['omniauth.origin'] || session[:previous_url] || root_path
     end
   end
 
