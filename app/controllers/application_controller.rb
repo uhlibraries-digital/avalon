@@ -43,7 +43,7 @@ class ApplicationController < ActionController::Base
   end
 
   def store_location
-    store_location_for(:user, request.url)
+    store_location_for(:user, request.url) unless request.xhr?
       if request.env["omniauth.params"].present? && request.env["omniauth.params"]["login_popup"].present?
         session[:previous_url] = root_path + "self_closing.html"
       end
@@ -53,7 +53,7 @@ class ApplicationController < ActionController::Base
     if request.env['QUERY_STRING']['login_popup'].present?
       root_path + "self_closing.html"
     else
-      request.env['omniauth.origin'] || session[:previous_url] || root_path
+      request.env['omniauth.origin'] || stored_location_for(resource) || session[:previous_url] || root_path
     end
   end
 
