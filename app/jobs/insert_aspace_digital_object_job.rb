@@ -56,7 +56,8 @@ module InsertAspaceDigitalObjectJob
       if digital_object.nil?
         Rails.logger.info "Adding Digital Object to #{aspace_uri}"
         digital_object = new_aspace_do do_uuid
-        digital_object.file_versions << new_aspace_file_version ark_url
+        new_file_version = new_aspace_file_version ark_url
+        digital_object[:file_versions] << new_file_version
         @digital_object = InsertAspaceDigitalObjectJob::DigitalObject.create(
           repo_id: repository_id,
           digital_object: digital_object)
@@ -64,9 +65,10 @@ module InsertAspaceDigitalObjectJob
         @archival_object.instances << new_instance
         @archival_object.id = @archival_object.uri
         @archival_object.save
-      elsif !has_do_ark digital_object.file_versions ark_url
+      elsif !has_do_ark(digital_object.file_versions, ark_url)
         @digital_object = InsertAspaceDigitalObjectJob::DigitalObject.find(digital_object.uri)
-        @digital_object.file_versions << new_aspace_file_version ark_url
+        new_file_version = new_aspace_file_version ark_url
+        @digital_object.file_versions << new_file_version
         @digital_object.id = @digital_object.uri
         @digital_object.save
       else
@@ -170,22 +172,23 @@ module InsertAspaceDigitalObjectJob
         "is_representative": false
       }
     end
-  end
 
-  def new_aspace_file_version(ark_url)
-    return {
-      "jsonmodel_type": "file_version",
-      "is_representative": false,
-      "file_uri": ark_url,
-      "use_statement": "Access",
-      "xlink_actuate_attribute": "",
-      "xlink_show_attribute": "",
-      "file_format_name": "",
-      "file_format_version": "",
-      "checksum": "",
-      "checksum_method": "",
-      "publish": true
-    }
+    def new_aspace_file_version(ark_url)
+      return {
+        "jsonmodel_type": "file_version",
+        "is_representative": false,
+        "file_uri": ark_url,
+        "use_statement": "Access",
+        "xlink_actuate_attribute": "",
+        "xlink_show_attribute": "",
+        "file_format_name": "",
+        "file_format_version": "",
+        "checksum": "",
+        "checksum_method": "",
+        "publish": true
+      }
+    end
+
   end
 
   class ArchivalObject < Flexirest::Base
