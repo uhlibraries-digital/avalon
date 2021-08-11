@@ -1,0 +1,4 @@
+development:
+  base_uri: <%= ENV['MINTER_BASE_URI'] %>
+  endpoint: <%= ENV['MINTER_ENDPOINT_URL'] %>
+  api_key: <%= ENV['MINTER_APIKEY'] %>

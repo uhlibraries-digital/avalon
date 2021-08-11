@@ -49,9 +49,9 @@ Devise.setup do |config|
   config.case_insensitive_keys = [:username]
 
   # Configure CAS authentication settings
-  config.cas_base_url = "https://signin.lib.uh.edu"
-  config.cas_validate_url = "https://signin.lib.uh.edu/p3/serviceValidate"
-  config.cas_create_user = true
+  config.cas_base_url = Settings.cas.base_url
+  config.cas_validate_url = Settings.cas.validate_url
+  config.cas_create_user = Settings.cas.create_user
 
   # Configure which authentication keys should have whitespace stripped.
   # These keys will have whitespace before and after removed upon creating or

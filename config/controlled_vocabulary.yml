@@ -1,0 +1,12 @@
+units:
+ - University of Houston Libraries Special Collections
+identifier_types:
+ digital object: Digital Object
+ preservation location: Preservation Location
+ aspace uri: ArchivesSpace URI
+ douuid: Digital Object UUID
+ other: Other
+note_types:
+ general: General Note
+ collection: Collection
+ donor: Donor

@@ -2,7 +2,8 @@ source 'https://rubygems.org'
 
 # Core rails
 gem 'rails', '4.2.9'
-gem 'mysql2'
+gem 'puma'
+gem 'mysql2', '~> 0.4.5'
 
 # For custom Minter/ASpace Jobs
 gem 'flexirest', '1.3.33'
@@ -30,7 +31,8 @@ gem 'fedora-migrate', '~> 0.5.0'
 gem 'rdf-rdfxml'
 
 # Samvera version pins
-gem 'blacklight', '=6.11.0'
+gem 'blacklight', '6.11.0'
+gem 'blacklight-access_controls', '0.6.2'
 gem 'rdf', '~> 2.2'
 gem 'rsolr', '~> 1.0'
 
@@ -89,7 +91,7 @@ gem 'config'
 gem 'hooks'
 gem 'jbuilder', '~> 2.0'
 gem 'parallel'
-gem 'whenever', git: "https://github.com/javan/whenever.git", require: false
+gem 'whenever', require: false
 gem 'with_locking'
 
 group :development do
@@ -106,11 +108,9 @@ group :development do
 end
 
 group :development, :test do
-  gem 'byebug'
   gem 'dotenv-rails'
   gem 'equivalent-xml'
   gem 'fcrepo_wrapper'
-  gem 'pry-byebug'
   gem 'pry-rails'
   gem 'rb-readline'
   gem 'rspec-rails'
@@ -150,16 +150,6 @@ end
 # Install the bundle --with zoom to use the Z39.50 bib retriever
 group :zoom, optional: true do
   gem 'zoom'
-end
-
-# Install the bundle --with postgres if using postgresql as the database backend
-group :postgres, optional: true do
-  gem 'pg'
-end
-
-# Install the bundle --with mysql if using mysql as the database backend
-group :mysql, optional: true do
-  gem 'mysql2'
 end
 
 extra_gems = File.expand_path("../Gemfile.local",__FILE__)

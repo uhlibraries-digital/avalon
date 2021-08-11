@@ -43,7 +43,7 @@ solr:
 streaming:
   server: :generic
   stream_token_ttl: 20 #minutes
-  content_path: '/var/avalon/rtmp_streams'
+  content_path: '/streams/hls_streams'
   rtmp_base: 'rtmp://localhost/avalon'
   http_base: 'http://localhost/streams'
   default_quality: 'low'
@@ -73,3 +73,7 @@ auth:
 #        :oauth_credentials:
 #          <%= ENV['LTI_AUTH_KEY'] %>: <%= ENV['LTI_AUTH_SECRET'] %>
 #            <% end %>
+cas:
+  base_url: http://cas.example.com/
+  validate_url: http://cas.example.com/p3/serviceValidate
+  create_user: true

@@ -1,0 +1,3 @@
+development:
+  url: <%= ENV['MATTERHORN_URL'] %>
+  timeout: 10

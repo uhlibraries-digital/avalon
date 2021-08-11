@@ -1,125 +1,78 @@
-version: '2'
-
-volumes:
-  streaming:
-  database:
-  fedora:
-  work:
-  solr:
+version: '3'
 
 services:
-  db:
-    image: avalonmediasystem/db:fedora4
-    volumes:
-      - database:/data
-    environment:
-      - AVALON_DB_PASSWORD=avalondb
-      - FEDORA_DB_PASSWORD
-      - PGDATA=/data
-      - POSTGRES_USER=postgres
+  app:
+    build: .
+    entrypoint: 'docker-entrypoint.sh'
+    command: ['rails', 's', '-p', '3000', '-b', '0.0.0.0']
+    env_file: 
+      - '.env'
+      - '.env-development'
     ports:
-      - "5432:5432"
-  fedora:
-    image: avalonmediasystem/fedora:4.7.x
-    depends_on:
+      - 3000:3000
+    depends_on: 
       - db
-    volumes:
-      - fedora:/data
-    ports:
-      - "8984:8080"
-  solr:
-    image: avalonmediasystem/solr:latest
-    ports:
-      - "8983:8983"
-    volumes:
-      - solr:/opt/solr/server/solr/mycores
-    entrypoint:
-      - docker-entrypoint.sh
-      - solr-precreate
-      - avalon
-      - /opt/solr/avalon_conf
-  matterhorn:
-    image: avalonmediasystem/matterhorn
-    volumes:
-      - ./masterfiles:/masterfiles
-      - streaming:/streamfiles
-      - work:/work
-    ports:
-      - "8080:8080"
-  rtmp:
-    image: avalonmediasystem/red5
-    volumes:
-      - streaming:/data
-    ports:
-      - "1935:1935"
-  hls:
-    image: avalonmediasystem/nginx
-    volumes:
-      - streaming:/data
-    ports:
-       - "8880:80"
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-  avalon:
-    image: avalonmediasystem/avalon:6.x-dev
-    command: "/rails_init-dev.sh"
-    depends_on:
-      - db
-      - fedora
+      - fcrepo
+      - memcached
       - solr
+      - matterhorn
+      - nginx
       - redis
-    environment:
-      - APP_NAME=avalon
-      - ASSET_HOST=http://localhost:3000
-      - AVALON_BRANCH=develop
-      - AVALON_DB_PASSWORD=avalondb
-      - SETTINGS__DOMAIN=http://localhost:3000
-      - CONTROLLED_VOCABULARY=config/controlled_vocabulary.yml
-      - DATABASE_URL=postgres://avalon:${AVALON_DB_PASSWORD}@db/avalon
-      - SETTINGS__DROPBOX__PATH=/masterfiles
-      - SETTINGS__DROPBOX__UPLOAD_URI=./masterfiles
-      - EMAIL_COMMENTS
-      - EMAIL_NOTIFICATION
-      - EMAIL_SUPPORT
-      - FEDORA_BASE_PATH
-      - FEDORA_NAMESPACE=avalon
-      - FEDORA_URL=http://fedoraAdmin:fedoraAdmin@fedora:8080/fedora/rest
-      - FFMPEG_PATH=/usr/bin/ffmpeg
-      - MASTER_FILE_PATH
-      - MASTER_FILE_STRATEGY=delete
-      - MATTERHORN_URL=http://matterhorn_system_account:CHANGE_ME@matterhorn:8080/
-      - SETTINGS__MATTERHORN__MEDIA_PATH=/masterfiles
-      - MEDIAINFO_PATH=/usr/bin/mediainfo
-      - RAILS_ENV=development
-      - REDIS_SERVER=redis:6379
-      - SECRET_KEY_BASE=abcd
-      - SMTP_ADDRESS
-      - SMTP_AUTHENTICATION
-      - SMTP_DOMAIN
-      - SMTP_ENABLE_STARTTLS_AUTO
-      - SMTP_OPENSSL_VERIFY_MODE
-      - SMTP_PASSWORD
-      - SMTP_PORT
-      - SMTP_USER_NAME
-      - SOLR_URL=http://solr:8983/solr/avalon
-      - SETTINGS__STREAMING__CONTENT_PATH=/streamfiles
-      - SETTINGS__STREAMING__STREAM_DEFAULT_QUALITY=medium
-      - SETTINGS__STREAMING__HTTP_BASE=http://localhost:8880/avalon
-      - SETTINGS__STREAMING__RTMP_BASE=rtmp://localhost/avalon
-      - SETTINGS__STREAMING__SERVER=nginx
-      - SETTINGS__STREAMING__STREAM_TOKEN_TTL=20
-      - SYSTEM_GROUPS=administrator,group_manager,manager
-      - Z3950_ATTRIBUTE
-      - Z3950_DATABASE
-      - Z3950_HOST
-      - Z3950_PORT
     volumes:
-      - ./masterfiles:/masterfiles
-      - ./gems:/gems
-      - .:/home/app/avalon
+      - .:/avalon-app
+      - ./dropbox:/var/avalon/dropbox
+      - streams:/streams
+
+  db:
+    image: mysql:5.7
+    restart: always
+    env_file: '.env-db'
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    volumes:
+      - db:/var/lib/mysql
+
+  memcached:
+    image: bitnami/memcached
+
+  matterhorn:
+    image: seanlw/matterhorn
+    restart: always
     ports:
-      - "3000:80"
-    stdin_open: true
-    tty: true
+      - 8080:8080
+    volumes: 
+      - ./dropbox:/var/avalon/dropbox
+      - streams:/streams
+
+  nginx:
+    image: nytimes/nginx-vod-module
+    restart: always
+    ports:
+      - 8181:8181
+    volumes:
+      - ./.nginx.conf:/usr/local/nginx/conf/nginx.conf
+      - streams:/usr/local/nginx/streams
+
+  fcrepo:
+    image: ghcr.io/samvera/fcrepo4:4.7.5
+    restart: always
+    volumes:
+      - fcrepo:/data:cached
+
+  redis:
+    image: redis:5-alpine
+    restart: always
+    volumes:
+      - redis:/data
+
+  solr:
+    image: solr:6.6
+    restart: always
+    volumes:
+      - solr:/opt/solr/server/solr
+
+volumes:
+  db:
+  streams:
+  redis:
+  fcrepo:
+  solr:

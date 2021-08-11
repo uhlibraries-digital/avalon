@@ -1,2 +1,2 @@
-development: localhost:6379
+development: <%= ENV['REDIS_SERVER'] %>
 test: localhost:6379

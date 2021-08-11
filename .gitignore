@@ -18,25 +18,8 @@
 .rbenv
 .byebug_history
 
-## PROJECT::SPECIFIC
-config/archivesspace.yml
-config/authentication.yml
-config/avalon.yml
-config/blacklight.yml
-config/controlled_vocabulary.yml
-config/database.yml
-config/fedora.yml
-config/matterhorn.yml
-config/minter.yml
-config/role_map_development.yml
-config/initializers/rubyhorn.rb
-config/secrets.yml
-config/solr.yml
-config/lti.yml
-
-config/settings/development.yml
 config/settings/production.yml
-config/settings/test.yml
+config/settings.local.yml
 
 public/media_objects
 public/streams
@@ -46,7 +29,8 @@ public/**/*.ts
 masterfiles/*
 /coverage
 /spec/master_file*
-.env*
-Gemfile.local
 config/fedora3.yml
 migration_report
+/dropbox/*
+!/dropbox/.keep
+.env-development

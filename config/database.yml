@@ -6,23 +6,23 @@
 #
 default: &default
   adapter: mysql2
+  host: <%= ENV['DATABASE_HOST'] %>
+  username: <%= ENV['DATABASE_USER'] %>
+  password: <%= ENV['DATABASE_PASSWORD'] %>
   pool: 5
   timeout: 10000
 
 development:
   <<: *default
-  host: localhost
-  database: rails
-  username: rails
-  password: rails
+  database: <%= ENV['DATABASE_NAME'] %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: db/test.sqlite3
+  database: avalon_test
 
 production:
   <<: *default
-  database: db/production.sqlite3
+  database: avalon_production

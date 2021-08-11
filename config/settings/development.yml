@@ -1,0 +1,17 @@
+domain:
+  host: localhost
+  port: 3000
+dropbox:
+  path: /var/avalon/dropbox
+  upload_uri: './dropbox'
+streaming:
+  server: :nginx
+  stream_token_ttl: 20 #minutes
+  content_path: /streams/rtmp_streams
+  rtmp_base: 'rtmp://localhost/avalon'
+  http_base: 'http://localhost:8181/hls'
+  default_quality: 'low'
+cas:
+  base_url: <%= ENV['CAS_BASE_URL'] %>
+  validate_url: <%= ENV['CAS_VALIDATE_URL'] %>
+  create_user: true

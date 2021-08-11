@@ -1,10 +1,10 @@
 development:
   administrator:
-    - slwatkins@uh.edu
+    - swatkin2
   manager:
-    - slwatkins@uh.edu
+    - swatkin2
   group_manager:
-    - slwatkins@uh.edu
+    - swatkin2
 
 test:
   administrator:
