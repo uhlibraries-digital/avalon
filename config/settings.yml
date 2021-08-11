@@ -12,6 +12,7 @@ matterhorn:
   root: 'http://localhost:8080/'
   baseApplication: 'avalon'
   cleanup_log: 'log/cleanup_jobs.log'
+  media_path: '/var/avalon/uploads'
 mediainfo:
   path: '/usr/bin/mediainfo'
 ffmpeg:

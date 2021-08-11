@@ -22,6 +22,7 @@ services:
       - .:/avalon-app
       - ./dropbox:/var/avalon/dropbox
       - streams:/streams
+      - uploads:/var/avalon/uploads
 
   db:
     image: mysql:5.7
@@ -41,6 +42,7 @@ services:
       - 8080:8080
     volumes: 
       - ./dropbox:/var/avalon/dropbox
+      - uploads:/var/avalon/uploads
       - streams:/streams
 
   nginx:
@@ -73,6 +75,7 @@ services:
 volumes:
   db:
   streams:
+  uploads:
   redis:
   fcrepo:
   solr:

@@ -21,6 +21,7 @@ ENV APP_PATH=/avalon-app
 RUN mkdir /avalon-app
 RUN mkdir -p /streams/hls_streams
 RUN mkdir -p /streams/rtmp_streams
+RUN mkdir -p /var/avalon/uploads
 RUN mkdir -p /var/avalon/dropbox
 WORKDIR /avalon-app
 
