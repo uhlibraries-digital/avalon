@@ -25,7 +25,7 @@ services:
       - uploads:/var/avalon/uploads
 
   db:
-    image: mysql:5.7
+    image: mysql:8.0
     restart: always
     env_file: '.env-db'
     command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
