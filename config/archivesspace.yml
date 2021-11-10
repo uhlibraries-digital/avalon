@@ -3,3 +3,9 @@ development:
   endpoint: <%= ENV['ASPACE_ENDPOINT_URL'] %>
   username: <%= ENV['ASPACE_USERNAME'] %>
   password: <%= ENV['ASPACE_PASSWORD'] %>
+
+production:
+  frontend: <%= ENV['ASPACE_FRONTEND_URL'] %>
+  endpoint: <%= ENV['ASPACE_ENDPOINT_URL'] %>
+  username: <%= ENV['ASPACE_USERNAME'] %>
+  password: <%= ENV['ASPACE_PASSWORD'] %>
