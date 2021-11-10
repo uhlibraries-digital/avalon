@@ -31,5 +31,5 @@ ADD Gemfile.lock /avalon-app/Gemfile.lock
 COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-RUN gem install bundler -v 1.17.3  && bundle install
+RUN gem install bundler -v 1.17.3  && bundle config build.nokogiri --use-system-libraries && bundle install
 ADD . /avalon-app
