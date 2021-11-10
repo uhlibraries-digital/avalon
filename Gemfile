@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 gem 'rails', '4.2.9'
 gem 'puma'
 gem 'mysql2', '~> 0.4.5'
+gem 'activerecord-nulldb-adapter'
 
 # For custom Minter/ASpace Jobs
 gem 'flexirest', '1.3.33'
