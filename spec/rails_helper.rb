@@ -1,10 +1,24 @@
-if ENV['COVERAGE'] || ENV['TRAVIS']
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+#   University.  Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+#   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#   CONDITIONS OF ANY KIND, either express or implied. See the License for the
+#   specific language governing permissions and limitations under the License.
+# ---  END LICENSE_HEADER BLOCK  ---
+
+if ENV['COVERAGE'] || ENV['CI']
   require 'simplecov'
   require 'codeclimate-test-reporter'
 
   SimpleCov.start('rails') do
     add_filter '/spec'
-    add_filter '/app/migration'    
+    add_filter '/app/migration'
   end
   SimpleCov.command_name 'spec'
 end
@@ -21,14 +35,15 @@ abort('The Rails environment is running in production mode!') if Rails.env.produ
 require 'spec_helper'
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
-# require 'factory_girl'
+# require 'factory_bot'
 require 'capybara/rails'
 require 'database_cleaner'
 require 'active_fedora/cleaner'
 require 'webmock/rspec'
-require 'active_fedora/noid/rspec'
+require 'noid/rails/rspec'
 require "email_spec"
 require "email_spec/rspec"
+require 'webdrivers'
 # require 'equivalent-xml/rspec_matchers'
 # require 'fakefs/safe'
 # require 'fileutils'
@@ -53,7 +68,22 @@ Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 # If you are not using ActiveRecord, you can remove this line.
 ActiveRecord::Migration.maintain_test_schema!
 
-ActiveJob::Base.queue_adapter = :inline
+ActiveJob::Base.queue_adapter = :test
+
+Capybara.server = :webrick
+Capybara.register_driver :selenium_chrome_headless_docker_friendly do |app|
+  Capybara::Selenium::Driver.load_selenium
+  browser_options = ::Selenium::WebDriver::Chrome::Options.new
+  browser_options.args << '--headless'
+  browser_options.args << '--disable-gpu'
+  # Sandbox cannot be used inside unprivileged Docker container
+  browser_options.args << '--no-sandbox'
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options: browser_options)
+end
+
+# eg `SHOW_BROWSER=true ./bin/rspec` will show you an actual chrome browser
+# being operated by capybara.
+Capybara.javascript_driver = ENV['SHOW_BROWSER'] ? :selenium_chrome : :selenium_chrome_headless_docker_friendly
 
 Shoulda::Matchers.configure do |config|
   config.integrate do |with|
@@ -63,7 +93,7 @@ Shoulda::Matchers.configure do |config|
 end
 
 RSpec.configure do |config|
-  include ActiveFedora::Noid::RSpec
+  include Noid::Rails::RSpec
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_path = "#{::Rails.root}/spec/fixtures"
@@ -74,7 +104,7 @@ RSpec.configure do |config|
   config.use_transactional_fixtures = false
 
   config.before :suite do
-    WebMock.disable_net_connect!(allow: ['localhost', '127.0.0.1', 'fedora', 'solr', 'matterhorn'])
+    WebMock.disable_net_connect!(allow: ['localhost', '127.0.0.1', 'fedora', 'fedora-test', 'solr', 'solr-test', 'matterhorn', 'https://chromedriver.storage.googleapis.com'])
     DatabaseCleaner.clean_with(:truncation)
     ActiveFedora::Cleaner.clean!
     disable_production_minter!
@@ -89,7 +119,7 @@ RSpec.configure do |config|
   end
 
   config.after :suite do
-    if Settings.spec['fake_dropbox']
+    if Settings.spec && Settings.spec['fake_dropbox']
       FileUtils.remove_dir Settings.spec['fake_dropbox'], true
       Settings.dropbox.path = Settings.spec['real_dropbox']
       Settings.spec = nil
@@ -100,6 +130,10 @@ RSpec.configure do |config|
 
   config.before :each do
     DatabaseCleaner.strategy = :truncation
+    # Clear out the job queue to ensure tests run with clean environment
+    ActiveJob::Base.queue_adapter.enqueued_jobs = []
+    ActiveJob::Base.queue_adapter.performed_jobs = []
+    Settings.bib_retriever = { 'default' => { 'protocol' => 'sru', 'url' => 'http://zgate.example.edu:9000/db', 'retriever_class' => 'Avalon::BibRetriever::SRU', 'retriever_class_require' => 'avalon/bib_retriever/sru' } }
   end
 
   config.after :each do
@@ -127,10 +161,14 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 
-  # config.include FactoryGirl::Syntax::Methods
+  # config.include FactoryBot::Syntax::Methods
   config.include Devise::Test::ControllerHelpers, type: :controller
   config.include ControllerMacros, type: :controller
   config.include Warden::Test::Helpers,type: :feature
   config.include FixtureMacros, type: :controller
   config.include OptionalExample
+end
+
+FactoryBot::SyntaxRunner.class_eval do
+  include ActionDispatch::TestProcess
 end

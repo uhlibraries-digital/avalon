@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -16,6 +16,7 @@ require 'avalon/stream_mapper'
 
 class Derivative < ActiveFedora::Base
   include DerivativeBehavior
+  include DerivativeIntercom
   include FrameSize
   include MigrationTarget
 
@@ -33,7 +34,7 @@ class Derivative < ActiveFedora::Base
   property :track_id, predicate: ::RDF::Vocab::EBUCore.identifier, multiple: false
   property :hls_track_id, predicate: Avalon::RDFVocab::Derivative.hlsTrackID, multiple: false
   property :managed, predicate: Avalon::RDFVocab::Derivative.isManaged, multiple: false do |index|
-    index.as Solrizer::Descriptor.new(:boolean, :stored, :indexed)
+    index.as ActiveFedora::Indexing::Descriptor.new(:boolean, :stored, :indexed)
   end
   property :derivativeFile, predicate: ::RDF::Vocab::EBUCore.filename, multiple: false do |index|
     index.as :stored_sortable
@@ -62,7 +63,7 @@ class Derivative < ActiveFedora::Base
     index.as :displayable
   end
 
-  before_destroy :retract_distributed_files!
+  around_destroy :delete_file!
 
   def initialize(*args)
     super(*args)
@@ -72,8 +73,8 @@ class Derivative < ActiveFedora::Base
   def set_streaming_locations!
     if managed
       path = URI.parse(absolute_location).path
-      self.location_url = Avalon::StreamMapper.map(path, 'rtmp', format)
-      self.hls_url      = Avalon::StreamMapper.map(path, 'http', format)
+      self.location_url = Avalon::StreamMapper.stream_path(path)
+      self.hls_url = Avalon::StreamMapper.map(path, 'http', format)
     end
     self
   end
@@ -86,22 +87,23 @@ class Derivative < ActiveFedora::Base
 
   def to_solr
     super.tap do |solr_doc|
-      solr_doc['stream_path_ssi'] = location_url.split(/:/).last if location_url.present?
+      solr_doc['stream_path_ssi'] = if location_url&.start_with?("rtmp")
+                                      location_url.split(/:/).last
+                                    else
+                                      location_url
+                                    end
       solr_doc['format_sim'] = self.format
     end
   end
 
   # TODO: move this into a service class along with master_file#update_progress_*
-  def self.from_output(dists, managed = true)
-    # output is an array of 1 or more distributions of the same derivative (e.g. file and HLS segmented file)
-    hls_output = dists.delete(dists.find { |o| (o[:url].ends_with? 'm3u8') || (o[:hls_url].present? && o[:hls_url].ends_with?('m3u8')) })
-    output = dists.first || hls_output
-
+  def self.from_output(output, managed = true)
     derivative = Derivative.new
-    derivative.managed = output.key?(:managed) ? output[:managed] : managed
+    derivative.managed = managed
     derivative.track_id = output[:id]
-    derivative.duration = output[:duration]
-    derivative.mime_type = output[:mime_type]
+    derivative.duration = output[:duration].to_i
+    # FIXME: Implement this in ActiveEncode
+    # derivative.mime_type = output[:mime_type]
     derivative.quality = output[:label].sub(/quality-/, '')
 
     derivative.audio_bitrate = output[:audio_bitrate]
@@ -110,24 +112,26 @@ class Derivative < ActiveFedora::Base
     derivative.video_codec = output[:video_codec]
     derivative.resolution = "#{output[:width]}x#{output[:height]}" if output[:width] && output[:height]
 
-    if hls_output
-      derivative.hls_track_id = hls_output[:id]
-      derivative.hls_url = hls_output[:hls_url].present? ? hls_output[:hls_url] : hls_output[:url]
-    end
+    # FIXME: Transform to stream url here? How do we distribute to the streaming server?
     derivative.location_url = output[:url]
+    # For Intercom push
+    derivative.hls_url = output[:hls_url] if output[:hls_url].present?
+
     derivative.absolute_location = output[:url]
 
     derivative
   end
 
+  def bitrate
+    audio_bitrate.to_i + video_bitrate.to_i
+  end
+
   private
 
-  # TODO: move this into a service class
-  def retract_distributed_files!
-    encode = master_file.encoder_class.find(master_file.workflow_id)
-    encode.remove_output!(track_id) if track_id.present?
-    encode.remove_output!(hls_track_id) if hls_track_id.present? && track_id != hls_track_id
-  rescue StandardError => e
-    logger.warn "Error deleting derivative: #{e.message}"
-  end
+    def delete_file!
+      loc = absolute_location
+      man = managed
+      yield
+      DeleteDerivativeJob.perform_later(loc) if man
+    end
 end

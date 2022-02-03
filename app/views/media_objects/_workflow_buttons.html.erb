@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+Copyright 2011-2020, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -15,8 +15,12 @@ Unless required by applicable law or agreed to in writing, software distributed
 %>
 <% save_disabled = @active_step == "access-control" && cannot?( :update_access_control, @media_object) %>
 <div class="btn-group">
-<% form ||= nil %>
-<%= submit_tag 'Save', name: 'save', class: "btn btn-default", form: form, disabled: save_disabled %>
-<%= hidden_field_tag :step, @active_step, form: form %>
-<%= submit_tag "Save and continue", name: 'save_and_continue', class: 'btn btn-primary', form: form %>
+  <% form ||= nil %>
+  <%= hidden_field_tag :step, @active_step, form: form %>
+  <% if form.present? %>
+    <%= submit_tag 'Save', name: 'save', class: "btn btn-default", form: form, disabled: save_disabled %>
+    <%= submit_tag "Save and continue", name: 'save_and_continue', class: 'btn btn-primary', form: form %>
+  <% else %>
+    <%= submit_tag "Continue", name: 'save_and_continue', class: 'btn btn-primary', form: form %>
+  <% end %>
 </div>

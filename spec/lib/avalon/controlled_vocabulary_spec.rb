@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -35,16 +35,23 @@ describe Avalon::ControlledVocabulary do
 
   describe '#find_by_name' do
     before do
-      allow(Avalon::ControlledVocabulary).to receive(:vocabulary).and_return({ units: ['Archives'] })
+      allow(Avalon::ControlledVocabulary).to receive(:vocabulary).and_return({ units: ['Default Unit', 'Archives'] })
     end
 
     it 'finds a vocabulary by name' do
-      expect(Avalon::ControlledVocabulary.find_by_name('units')).to eql ['Archives']
+      expect(Avalon::ControlledVocabulary.find_by_name('units')).to eql ['Default Unit', 'Archives']
     end
 
     it 'finds a vocabulary by symbol' do
-      expect(Avalon::ControlledVocabulary.find_by_name(:units)).to eql ['Archives']
+      expect(Avalon::ControlledVocabulary.find_by_name(:units)).to eql ['Default Unit', 'Archives']
+    end
+
+    it 'finds and sorts the vocabulary' do
+      expect(Avalon::ControlledVocabulary.find_by_name(:units, sort: true)).to eql ['Archives', 'Default Unit']
+    end
+
+    it 'finds and does not sort the vocabulary' do
+      expect(Avalon::ControlledVocabulary.find_by_name(:units, sort: false)).to eql ['Default Unit', 'Archives']
     end
   end
-
 end

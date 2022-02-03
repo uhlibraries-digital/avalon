@@ -5,24 +5,23 @@
 #   gem 'sqlite3'
 #
 default: &default
-  adapter: mysql2
-  host: <%= ENV['DATABASE_HOST'] %>
-  username: <%= ENV['DATABASE_USER'] %>
-  password: <%= ENV['DATABASE_PASSWORD'] %>
-  pool: 5
+  adapter: sqlite3
+  pool: 10
   timeout: 10000
 
 development:
   <<: *default
-  database: <%= ENV['DATABASE_NAME'] %>
+  database: db/development.sqlite3
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: avalon_test
+  pool: 20
+  database: db/test.sqlite3
 
 production:
   <<: *default
-  database: <%= ENV['DATABASE_NAME'] %>
+  pool: 20
+  database: db/production.sqlite3

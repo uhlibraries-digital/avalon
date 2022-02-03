@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -13,14 +13,29 @@
 # ---  END LICENSE_HEADER BLOCK  ---
 
 class Admin::CollectionsController < ApplicationController
-  before_filter :authenticate_user!
-  load_and_authorize_resource except: [:index, :remove]
-  before_filter :load_and_authorize_collections, only: [:index]
+  include Rails::Pagination
+
+  before_action :authenticate_user!
+  load_and_authorize_resource except: [:index, :remove, :attach_poster, :remove_poster, :poster]
+  before_action :load_and_authorize_collections, only: [:index]
   respond_to :html
 
   def load_and_authorize_collections
-    @collections = get_user_collections(params[:user])
     authorize!(params[:action].to_sym, Admin::Collection)
+    repository = CatalogController.new.repository
+    # Allow the number of collections to be greater than 100
+    blacklight_config.max_per_page = 100_000
+    builder = ::CollectionSearchBuilder.new([:add_access_controls_to_solr_params_if_not_admin, :only_wanted_models, :add_paging_to_solr], self).rows(100_000)
+    if params[:user].present? && can?(:manage, Admin::Collection)
+      user = User.find_by_username_or_email(params[:user])
+      unless user.present?
+        @collections = []
+        return
+      end
+      builder.user = user
+    end
+    response = repository.search(builder)
+    @collections = response.documents.collect { |doc| ::Admin::CollectionPresenter.new(doc) }.sort_by { |c| c.name.downcase }
   end
 
   # GET /collections
@@ -66,12 +81,12 @@ class Admin::CollectionsController < ApplicationController
   # GET /collections/1/items
   def items
     mos = paginate @collection.media_objects
-    render json: mos.collect{|mo| [mo.id, mo.to_json] }.to_h
+    render json: mos.to_a.collect{|mo| [mo.id, mo.as_json] }.to_h
   end
 
   # POST /collections
   def create
-    @collection = Admin::Collection.create(collection_params)
+    @collection = Admin::Collection.create(collection_params.merge(managers: [current_user.user_key]))
     if @collection.persisted?
       User.where(Devise.authentication_keys.first => [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
         NotificationsMailer.new_collection(
@@ -123,59 +138,24 @@ class Admin::CollectionsController < ApplicationController
       end
     end
 
-    # If Save Access Setting button or Add/Remove User/Group button has been clicked
-    if can?(:update_access_control, @collection)
-      ["group", "class", "user", "ipaddress"].each do |title|
-        if params["submit_add_#{title}"].present?
-          if params["add_#{title}"].present?
-            val = params["add_#{title}"].strip
-            if title=='user'
-              @collection.default_read_users += [val]
-            elsif title=='ipaddress'
-              if ( IPAddr.new(val) rescue false )
-                @collection.default_read_groups += [val]
-              else
-                flash[:notice] = "IP Address #{val} is invalid. Valid examples: 124.124.10.10, 124.124.0.0/16, 124.124.0.0/255.255.0.0"
-              end
-            else
-              @collection.default_read_groups += [val]
-            end
-          else
-            flash[:notice] = "#{title.titleize} can't be blank."
-          end
-        end
+    update_access(@collection, params) if can?(:update_access_control, @collection)
 
-        if params["remove_#{title}"].present?
-          if ["group", "class", "ipaddress"].include? title
-            # This is a hack to deal with the fact that calling default_read_groups#delete isn't marking the record as dirty
-            # TODO: Ensure default_read_groups is tracked by ActiveModel::Dirty
-            @collection.default_read_groups_will_change!
-            @collection.default_read_groups.delete params["remove_#{title}"]
-          else
-            # This is a hack to deal with the fact that calling default_read_users#delete isn't marking the record as dirty
-            # TODO: Ensure default_read_users is tracked by ActiveModel::Dirty
-            @collection.default_read_users_will_change!
-            @collection.default_read_users.delete params["remove_#{title}"]
-          end
-        end
-    end
-
-      @collection.default_visibility = params[:visibility] unless params[:visibility].blank?
-
-      @collection.default_hidden = params[:hidden] == "1"
-    end
     @collection.update_attributes collection_params if collection_params.present?
     saved = @collection.save
-    if saved and name_changed
-      User.where(Devise.authentication_keys.first => [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
-        NotificationsMailer.update_collection(
-          updater_id: current_user.id,
-          collection_id: @collection.id,
-          user_id: admin_user.id,
-          old_name: @old_name,
-          subject: "Notification: collection #{@old_name} changed to #{@collection.name}"
-        ).deliver_later
+    if saved
+      if name_changed
+        User.where(Devise.authentication_keys.first => [Avalon::RoleControls.users('administrator')].flatten).each do |admin_user|
+          NotificationsMailer.update_collection(
+            updater_id: current_user.id,
+            collection_id: @collection.id,
+            user_id: admin_user.id,
+            old_name: @old_name,
+            subject: "Notification: collection #{@old_name} changed to #{@collection.name}"
+          ).deliver_later
+        end
       end
+
+      apply_access(@collection, params) if can?(:update_access_control, @collection)
     end
 
     respond_to do |format|
@@ -197,7 +177,7 @@ class Admin::CollectionsController < ApplicationController
   # GET /collections/1/remove
   def remove
     @collection = Admin::Collection.find(params['id'])
-    raise CanCan::AccessDenied unless current_ability.can? :destroy, @collection
+    authorize! :destroy, @collection
     @objects    = @collection.media_objects
     @candidates = get_user_collections.reject { |c| c == @collection }
   end
@@ -226,9 +206,111 @@ class Admin::CollectionsController < ApplicationController
     end
   end
 
+  def attach_poster
+    @collection = Admin::Collection.find(params['id'])
+    authorize! :edit, @collection, message: "You do not have sufficient privileges to add a poster image."
+
+    poster_file = params[:admin_collection][:poster]
+    is_image = check_image_compliance(poster_file&.path)
+    if is_image
+      @collection.poster.content = poster_file.read
+      @collection.poster.mime_type = 'image/png'
+      @collection.poster.original_name = poster_file.original_filename
+
+      if @collection.save
+        flash[:success] = "Poster file successfully added."
+      else
+        flash[:error] = "There was a problem storing the poster image."
+      end
+    else
+      flash[:error] = "Uploaded file is not a recognized poster image file"
+    end
+
+    redirect_to admin_collection_path(@collection)
+  end
+
+  def remove_poster
+    @collection = Admin::Collection.find(params['id'])
+    authorize! :edit, @collection, message: "You do not have sufficient privileges to remove a poster image."
+
+    @collection.poster.content = ''
+    @collection.poster.original_name = ''
+
+    if @collection.save
+      flash[:success] = "Poster file successfully removed."
+    else
+      flash[:error] = "There was a problem removing the poster image."
+    end
+
+    redirect_to admin_collection_path(@collection)
+  end
+
+  def poster
+    @collection = Admin::Collection.find(params['id'])
+    authorize! :show, @collection
+
+    file = @collection.poster
+    if file.nil? || file.new_record?
+      render plain: 'Collection Poster Not Found', status: :not_found
+    else
+      render plain: file.content, content_type: file.mime_type
+    end
+  end
+
   private
 
+  def update_access(collection, params)
+    # If Save Access Setting button or Add/Remove User/Group button has been clicked
+    ["group", "class", "user", "ipaddress"].each do |title|
+      if params["submit_add_#{title}"].present?
+        if params["add_#{title}"].present?
+          val = params["add_#{title}"].strip
+          if title=='user'
+            collection.default_read_users += [val]
+          elsif title=='ipaddress'
+            if ( IPAddr.new(val) rescue false )
+              collection.default_read_groups += [val]
+            else
+              flash[:notice] = "IP Address #{val} is invalid. Valid examples: 124.124.10.10, 124.124.0.0/16, 124.124.0.0/255.255.0.0"
+            end
+          else
+            collection.default_read_groups += [val]
+          end
+        else
+          flash[:notice] = "#{title.titleize} can't be blank."
+        end
+      end
+
+      if params["remove_#{title}"].present?
+        if ["group", "class", "ipaddress"].include? title
+          # This is a hack to deal with the fact that calling default_read_groups#delete isn't marking the record as dirty
+          # TODO: Ensure default_read_groups is tracked by ActiveModel::Dirty
+          collection.default_read_groups_will_change!
+          collection.default_read_groups.delete params["remove_#{title}"]
+        else
+          # This is a hack to deal with the fact that calling default_read_users#delete isn't marking the record as dirty
+          # TODO: Ensure default_read_users is tracked by ActiveModel::Dirty
+          collection.default_read_users_will_change!
+          collection.default_read_users.delete params["remove_#{title}"]
+        end
+      end
+    end
+
+    collection.default_visibility = params[:visibility] unless params[:visibility].blank?
+    collection.default_hidden = params[:hidden] == "1"
+  end
+
+  def apply_access(collection, params)
+    BulkActionJobs::ApplyCollectionAccessControl.perform_later(collection.id, params[:overwrite] == "true") if params["apply_access"].present?
+  end
+
   def collection_params
-    params.permit(:admin_collection => [:name, :description, :unit, :managers => []])[:admin_collection]
+    params.permit(:admin_collection => [:name, :description, :unit, :contact_email, :website_label, :website_url, :managers => []])[:admin_collection]
+  end
+
+  def check_image_compliance(poster_path)
+    fastimage = FastImage.new(poster_path)
+    # Size derived from width and aspect ratio from JS code, assets/javascript/crop_upload.js:60-63
+    fastimage.type == :png && fastimage.size == [700, 560] # [width, height]
   end
 end

@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -21,6 +21,7 @@ class ModsDocument < ActiveFedora::OmDatastream
 
   IDENTIFIER_TYPES = Avalon::ControlledVocabulary.find_by_name(:identifier_types) || {"other" => "Local"}
   NOTE_TYPES = Avalon::ControlledVocabulary.find_by_name(:note_types) || {"local" => "Local Note"}
+  RIGHTS_STATEMENTS = Avalon::ControlledVocabulary.find_by_name(:rights_statements)
 
   set_terminology do |t|
     t.root(:path=>'mods',
@@ -153,7 +154,8 @@ class ModsDocument < ActiveFedora::OmDatastream
     t.permalink(:ref => [:location, :url_with_context])
 
     t.usage(:path => 'accessCondition')
-    t.terms_of_use(:path => 'accessCondition', :attributes => { :type => 'use and reproduction' })
+    t.terms_of_use(:path => 'accessCondition', :attributes => { :type => 'use and reproduction'})
+    t.rights_statement(:path => 'accessCondition', :attributes => { :type => 'use and reproduction', :displayLabel => 'Rights Statement' })
     t.table_of_contents(:path => 'tableOfContents')
     t.access_restrictions(:path => 'accessCondition', :attributes => { :type => 'restrictions on access' })
 
@@ -209,13 +211,14 @@ class ModsDocument < ActiveFedora::OmDatastream
     bib_id.strip!
     if bib_id.present?
       bib_id_label ||= IDENTIFIER_TYPES.keys.first
-      new_record = Avalon::BibRetriever.instance.get_record(bib_id)
+      new_record = Avalon::BibRetriever.for(bib_id_label).get_record(bib_id)
       if new_record.present?
         old_resource_type = self.resource_type.dup
         old_media_type = self.media_type.dup
         old_other_identifier = self.other_identifier.type.zip(self.other_identifier)
         old_bibliographic_id = self.bibliographic_id.dup
         old_bibliographic_id_source = self.bibliographic_id.source.dup
+        old_date_issued = date_issued.dup.first
         # replace old mods with newly imported mods
         self.ng_xml = Nokogiri::XML(new_record)
         # de-dupe imported values
@@ -239,6 +242,8 @@ class ModsDocument < ActiveFedora::OmDatastream
         ((old_other_identifier | new_other_identifier)-(old_bibliographic_id_source.zip old_bibliographic_id)).each do |id_pair|
           self.add_other_identifier(id_pair[1], id_pair[0])
         end
+        # if bib_import includes date_issued, use it. Otherwise use old_date_issued or 'unknown/unknown'
+        add_date_issued(old_date_issued || 'unknown/unknown') if date_issued.blank?
       end
       # add new bibliographic_id as another other identifier and also as a the new bibliographic_id
       self.add_other_identifier(bib_id, bib_id_label) unless self.other_identifier.type.zip(self.other_identifier).include?([bib_id_label, bib_id])

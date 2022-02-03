@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -13,17 +13,18 @@
 # ---  END LICENSE_HEADER BLOCK  ---
 
 require 'avalon/controller/controller_behavior'
+require 'avalon/intercom'
 
 class MediaObjectsController < ApplicationController
+  include Rails::Pagination
   include Avalon::Workflow::WorkflowControllerBehavior
   include Avalon::Controller::ControllerBehavior
   include ConditionalPartials
   include SecurityHelper
 
-  before_action :authenticate_user!, except: [:show, :set_session_quality, :show_stream_details]
-  before_action :authenticate_api!, only: [:show, :create, :json_update], if: proc { request.format.json? }
-  load_and_authorize_resource except: [:create, :json_update, :destroy, :update_status, :set_session_quality, :tree, :deliver_content, :confirm_remove, :show_stream_details, :add_to_playlist_form, :add_to_playlist]
-  # authorize_resource only: [:create, :update]
+  before_action :authenticate_user!, except: [:show, :set_session_quality, :show_stream_details, :manifest]
+  load_and_authorize_resource except: [:create, :destroy, :update_status, :set_session_quality, :tree, :deliver_content, :confirm_remove, :show_stream_details, :add_to_playlist_form, :add_to_playlist, :intercom_collections, :manifest, :move_preview]
+  authorize_resource only: [:create]
 
   before_action :inject_workflow_steps, only: [:edit, :update], unless: proc { request.format.json? }
   before_action :load_player_context, only: [:show]
@@ -36,7 +37,7 @@ class MediaObjectsController < ApplicationController
   end
 
   is_editor_or_not_lti = proc { |ctx| self.is_editor(ctx) || !self.is_lti_session(ctx) }
-  is_editor_or_lti = proc { |ctx| (Avalon::Authentication::Providers.any? {|p| p[:provider] == :lti } &&self.is_editor(ctx)) || self.is_lti_session(ctx) }
+  is_editor_or_lti = proc { |ctx| (Avalon::Authentication::Providers.any? {|p| p[:provider] == :lti } && self.is_editor(ctx)) || self.is_lti_session(ctx) }
 
   add_conditional_partial :share, :share, partial: 'share_resource', if: is_editor_or_not_lti
   add_conditional_partial :share, :embed, partial: 'embed_resource', if: is_editor_or_not_lti
@@ -46,12 +47,48 @@ class MediaObjectsController < ApplicationController
     params[:action] == 'show'
   end
 
-  def authenticate_api!
-    return head :unauthorized if !signed_in?
-  end
-
   def confirm_remove
     raise CanCan::AccessDenied unless Array(params[:id]).any? { |id| current_ability.can? :destroy, MediaObject.find(id) }
+  end
+
+  def intercom_collections
+    reload = params['reload'] == 'true'
+    collections = session[:intercom_collections]
+    if reload || collections.blank?
+      intercom = Avalon::Intercom.new(user_key)
+      collections = intercom.user_collections
+      session[:intercom_collections] = collections
+    end
+    collections.each do |c|
+      c['default'] = c['id'] == session[:intercom_default_collection]
+    end
+    respond_to do |format|
+      format.json do
+        render json: collections.to_json
+      end
+    end
+  end
+
+  def intercom_push
+    if can? :intercom_push, @media_object
+      intercom = Avalon::Intercom.new(user_key)
+      collections = intercom.user_collections(true)
+      session[:intercom_collections] = collections
+      result = intercom.push_media_object(@media_object, params[:collection_id], params[:include_structure] == 'true')
+      if result[:link].present?
+        session[:intercom_default_collection] = params[:collection_id]
+        target_link = view_context.link_to('See it here.', result[:link], target: '_blank')
+        flash[:success] = view_context.safe_join(["The item was pushed successfully. ", target_link])
+        flash[:alert] = result[:message] if result[:message].present?
+      elsif result[:status].present?
+        flash[:alert] = "There was an error pushing the item. (#{result[:status]}: #{result[:message]})"
+      else
+        flash[:alert] = result[:message]
+      end
+    else
+      flash[:alert] = 'You do not have permission to push this media object.'
+    end
+    redirect_to media_object_path(@media_object.id)
   end
 
   def new
@@ -128,7 +165,6 @@ class MediaObjectsController < ApplicationController
 
   # PUT /media_objects/avalon:1.json
   def json_update
-    @media_object = MediaObject.find(params[:id])
     # Preset the workflow to the last workflow step to ensure validators run
     @media_object.workflow.last_completed_step = HYDRANT_STEPS.last.step
     update_media_object
@@ -146,11 +182,11 @@ class MediaObjectsController < ApplicationController
     @media_object.avalon_uploader = 'REST API'
 
     populate_from_catalog = (!!api_params[:import_bib_record] && media_object_parameters[:bibliographic_id].present?)
-    if populate_from_catalog and Avalon::BibRetriever.configured?
+    if populate_from_catalog && Avalon::BibRetriever.configured?(media_object_parameters[:bibliographic_id][:source])
       begin
         # Set other identifiers
         # FIXME: The ordering in the slice is important
-        @media_object.update_attributes(media_object_parameters.slice(:other_identifier, :other_identifier_type))
+        @media_object.update_attributes(media_object_parameters.slice(:other_identifier, :other_identifier_type, :identifier))
         # Try to use Bib Import
         @media_object.descMetadata.populate_from_catalog!(media_object_parameters[:bibliographic_id][:id],
                                                           media_object_parameters[:bibliographic_id][:source])
@@ -185,35 +221,37 @@ class MediaObjectsController < ApplicationController
       error_messages += ['Failed to create media object:']+@media_object.errors.full_messages
     elsif master_files_params.respond_to?('each')
       old_ordered_master_files = @media_object.ordered_master_files.to_a.collect(&:id)
-      master_files_params.each do |file_spec|
-        master_file = MasterFile.new(file_spec.except(:structure, :captions, :captions_type, :files, :other_identifier, :label))
+      master_files_params.each_with_index do |file_spec, index|
+        master_file = MasterFile.new(file_spec.except(:structure, :captions, :captions_type, :files, :other_identifier, :label, :date_digitized))
         # master_file.media_object = @media_object
         master_file.structuralMetadata.content = file_spec[:structure] if file_spec[:structure].present?
         if file_spec[:captions].present?
-          master_file.captions.content = file_spec[:captions]
+          master_file.captions.content = file_spec[:captions].encode(Encoding.find('UTF-8'), invalid: :replace, undef: :replace, replace: '')
           master_file.captions.mime_type = file_spec[:captions_type]
         end
         # TODO: This inconsistency should eventually be addressed by updating the API
         master_file.title = file_spec[:label] if file_spec[:label].present?
         master_file.date_digitized = DateTime.parse(file_spec[:date_digitized]).to_time.utc.iso8601 if file_spec[:date_digitized].present?
-        master_file.identifier += Array(file_spec[:other_identifier])
+        master_file.identifier += Array(params[:files][index][:other_identifier])
+        master_file.comment += Array(params[:files][index][:comment])
         master_file._media_object = @media_object
         if file_spec[:files].present?
           if master_file.update_derivatives(file_spec[:files], false)
+            master_file.update_stills_from_offset!
+            WaveformJob.perform_later(master_file.id)
             @media_object.ordered_master_files += [master_file]
           else
             file_location = file_spec.dig(:file_location) || '<unknown>'
             message = "Problem saving MasterFile for #{file_location}:"
             error_messages += [message]
             error_messages += master_file.errors.full_messages
-            @media_object.destroy
             break
           end
         end
       end
 
       if error_messages.empty?
-        if api_params[:replace_master_files]
+        if api_params[:replace_masterfiles]
           old_ordered_master_files.each do |mf|
             p = MasterFile.find(mf)
             @media_object.master_files.delete(p)
@@ -229,10 +267,13 @@ class MediaObjectsController < ApplicationController
         @media_object.workflow.last_completed_step = HYDRANT_STEPS.last.step
         if !@media_object.save
           error_messages += ['Failed to create media object:']+@media_object.errors.full_messages
-          @media_object.destroy
-        elsif !!api_params[:publish]
-          @media_object.publish!('REST API')
-          @media_object.workflow.publish
+        else
+          if !!api_params[:publish]
+            @media_object.publish!('REST API')
+            @media_object.workflow.publish
+          else
+            @media_object.publish!('')
+          end
         end
       end
     end
@@ -241,7 +282,7 @@ class MediaObjectsController < ApplicationController
     else
       logger.warn "update_media_object failed for #{params[:fields][:title] rescue '<unknown>'}: #{error_messages}"
       render json: {errors: error_messages}, status: 422
-      @media_object.destroy
+      @media_object.destroy unless action_name == 'json_update'
     end
   end
 
@@ -292,38 +333,42 @@ class MediaObjectsController < ApplicationController
         end
       end
       format.json do
-        render json: @media_object.to_json
+        response_json = @media_object.as_json(include_structure: params[:include_structure] == "true")
+        response_json.except!(:files, :visibility, :read_groups) unless current_ability.can? :edit, @media_object
+        render json: response_json.to_json
       end
     end
   end
 
   def show_stream_details
     load_current_stream
-    raise CanCan::AccessDenied unless current_ability.can? :read, @currentStream
+    authorize! :read, @currentStream
     render json: @currentStreamInfo
   end
 
   def show_progress
     overall = { :success => 0, :error => 0 }
-
+    encode_gids = master_file_presenters.collect { |mf| "gid://ActiveEncode/#{mf.encoder_class}/#{mf.workflow_id}" }
     result = Hash[
-      master_file_presenter.collect { |mf|
+      ActiveEncode::EncodeRecord.where(global_id: encode_gids).collect do |encode|
+        raw_encode = JSON.parse(encode.raw_object)
+        status = encode.state.to_s.upcase
         mf_status = {
-          :status => mf.status_code,
-          :complete => mf.percent_complete.to_i,
-          :success => mf.percent_succeeded.to_i,
-          :error => mf.percent_failed.to_i,
-          :operation => mf.operation,
-          :message => mf.error.try(:sub,/^.+:/,'')
+          status: status,
+          complete: encode.progress.to_i,
+          success: encode.progress.to_i,
+          operation: raw_encode['current_operations']&.first,
+          message: raw_encode['errors'].first.try(:sub, /^.+:/, '')
         }
-        if mf.status_code == 'FAILED'
-          mf_status[:error] = 100-mf_status[:success]
+        if status == 'FAILED'
+          mf_status[:error] = 100 - mf_status[:success]
           overall[:error] += 100
         else
+          mf_status[:error] = 0
           overall[:success] += mf_status[:complete]
         end
-        [mf.id, mf_status]
-      }
+        [encode.master_file_id, mf_status]
+      end
     ]
     master_files_count = @media_object.master_files.size
     if master_files_count > 0
@@ -355,7 +400,7 @@ class MediaObjectsController < ApplicationController
         errors += [ "#{media_object.title} (#{params[:id]}) permission denied" ]
       end
     end
-    message = "#{success_count} #{'media object'.pluralize(success_count)} are being deleted."
+    message = "#{success_count} #{'media object'.pluralize(success_count)} deleted."
     message += "These objects were not deleted:</br> #{ errors.join('<br/> ') }" if errors.count > 0
     BulkActionJobs::Delete.perform_later success_ids, nil
     redirect_to params[:previous_view]=='/bookmarks'? '/bookmarks' : root_path, flash: { notice: message }
@@ -390,7 +435,7 @@ class MediaObjectsController < ApplicationController
     end
     message = "#{success_count} #{'media object'.pluralize(success_count)} successfully #{status}ed."
     message += "These objects were not #{status}ed:</br> #{ errors.join('<br/> ') }" if errors.count > 0
-    redirect_to :back, flash: {notice: message.html_safe}
+    redirect_back(fallback_location: root_path, flash: {notice: message.html_safe})
   end
 
   # Sets the published status for the object. If no argument is given then
@@ -413,6 +458,27 @@ class MediaObjectsController < ApplicationController
     end
   end
 
+  def manifest
+    @media_object = MediaObject.find(params[:id])
+    authorize! :read, @media_object
+
+    master_files = master_file_presenters
+    canvas_presenters = master_files.collect do |mf|
+      stream_info = secure_streams(mf.stream_details)
+      IiifCanvasPresenter.new(master_file: mf, stream_info: stream_info)
+    end
+    presenter = IiifManifestPresenter.new(media_object: @media_object, master_files: canvas_presenters)
+
+    manifest = IIIFManifest::V3::ManifestFactory.new(presenter).to_h
+    # TODO: implement thumbnail in iiif_manifest
+    manifest["thumbnail"] = [{ "id" => presenter.thumbnail, "type" => 'Image' }] if presenter.thumbnail
+
+    respond_to do |wants|
+      wants.json { render json: manifest.to_json }
+      wants.html { render json: manifest.to_json }
+    end
+  end
+
   def self.initialize_media_object( user_key )
     media_object = MediaObject.new( avalon_uploader: user_key )
 
@@ -425,18 +491,48 @@ class MediaObjectsController < ApplicationController
 
   def set_session_quality
     session[:quality] = params[:quality] if params[:quality].present?
-    render nothing: true
+    head :ok
+  end
+
+  def move_preview
+    @media_object = MediaObject.find(params[:id])
+    authorize! :update, @media_object
+    preview = {
+      id: @media_object.id,
+      title: @media_object.title,
+      collection: @media_object.collection.name,
+      main_contributors: @media_object.creator,
+      publication_date: @media_object.date_created,
+      published_by: @media_object.avalon_publisher,
+      published: @media_object.published?,
+    }
+
+    respond_to do |wants|
+      wants.json { render json: preview }
+    end
   end
 
   protected
 
-  def master_file_presenter
-    SpeedyAF::Base.where("isPartOf_ssim:#{@media_object.id}",
-      order: -> { @media_object.indexed_master_file_ids }, defaults: { permalink: nil })
+  def master_file_presenters
+    # NOTE: Defaults are set on returned SpeedyAF::Base objects if field isn't present in the solr doc.
+    # This is important otherwise speedy_af will reify from fedora when trying to access this field.
+    # When adding a new property to the master file model that will be used in the interface,
+    # add it to the default below to avoid reifying for master files lacking a value for the property.
+    SpeedyAF::Proxy::MasterFile.where("isPartOf_ssim:#{@media_object.id}",
+                                      order: -> { @media_object.indexed_master_file_ids },
+                                      defaults: {
+                                        permalink: nil,
+                                        title: nil,
+                                        encoder_classname: nil,
+                                        workflow_id: nil,
+                                        comment: [],
+                                        supplemental_files_json: nil
+                                      })
   end
 
   def load_master_files(mode = :rw)
-    @masterFiles ||= mode == :rw ? @media_object.indexed_master_files.to_a : master_file_presenter
+    @masterFiles ||= mode == :rw ? @media_object.indexed_master_files.to_a : master_file_presenters
   end
 
   def set_player_token
@@ -495,7 +591,11 @@ class MediaObjectsController < ApplicationController
     # TODO: Restrist permitted params!!!
     # params.require(:fields).permit!
     # params.permit!
-    mo_parameters = ActionController::Parameters.new(Hash(params[:fields]).merge(Hash(params[:media_object]))).permit!
+    params[:fields] ||= {}
+    params[:fields].permit!
+    params[:media_object] ||= {}
+    params[:media_object].permit!
+    mo_parameters = params[:fields].merge(params[:media_object])
     # NOTE: Deal with multi-part fields
     #Bib ids
     bib_id = mo_parameters.delete(:bibliographic_id)
@@ -535,33 +635,36 @@ class MediaObjectsController < ApplicationController
                              :captions,
                              :captions_type,
                              :workflow_name,
-                             :percent_complete,
-                             :percent_succeeded,
-                             :percent_failed,
-                             :status_code,
+                             :workflow_id,
+                             # :percent_complete,
+                             # :percent_succeeded,
+                             # :percent_failed,
+                             # :status_code,
                              :other_identifier,
                              :structure,
                              :physical_description,
-                             :files => [:label,
-                                        :id,
-                                        :url,
-                                        :hls_url,
-                                        :duration,
-                                        :mime_type,
-                                        :audio_bitrate,
-                                        :audio_codec,
-                                        :video_bitrate,
-                                        :video_codec,
-                                        :width,
-                                        :height,
-                                        :location,
-                                        :track_id,
-                                        :hls_track_id,
-                                        :managed,
-                                        :derivativeFile]])[:files]
+                             :width,
+                             :height,
+                             files: [:label,
+                                     :id,
+                                     :url,
+                                     :hls_url,
+                                     :duration,
+                                     :mime_type,
+                                     :audio_bitrate,
+                                     :audio_codec,
+                                     :video_bitrate,
+                                     :video_codec,
+                                     :width,
+                                     :height,
+                                     :location,
+                                     :track_id,
+                                     :hls_track_id,
+                                     :managed,
+                                     :derivativeFile]])[:files]
   end
 
   def api_params
-    params.permit(:collection_id, :publish, :import_bib_record, :replace_master_files)
+    params.permit(:collection_id, :publish, :import_bib_record, :replace_masterfiles)
   end
 end

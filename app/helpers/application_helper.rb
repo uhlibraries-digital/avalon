@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -22,28 +22,40 @@ module ApplicationHelper
     "#{application_name} #{t(:release_label)} #{Avalon::VERSION}"
   end
 
-  def share_link_for(obj)
+  def share_link_for(obj, only_path: false)
     if obj.nil?
       I18n.t('media_object.empty_share_link')
     elsif obj.permalink.present?
       obj.permalink
     else
       case obj
-      when MediaObject then media_object_url(obj)
-      when MasterFileBehavior then id_section_media_object_url(obj.media_object.id, obj.id)
+      when MediaObject
+        if only_path
+          media_object_path(obj)
+        else
+          media_object_url(obj)
+        end
+      when MasterFileBehavior
+        if only_path
+          id_section_media_object_path(obj.media_object_id, obj.id)
+        else
+          id_section_media_object_url(obj.media_object_id, obj.id)
+        end
       end
     end
   end
 
-  def lti_share_url_for(obj, opts = {})
-    return I18n.t('share.empty_lti_share_url') if obj.nil?
+  def lti_share_url_for(obj, _opts = {})
+    if obj.nil? || Avalon::Authentication::Providers.none? { |p| p[:provider] == :lti }
+      return I18n.t('share.empty_lti_share_url')
+    end
     target = case obj
              when MediaObject then obj.id
              when MasterFile then obj.id
              when Playlist then obj.to_gid_param
+             when Timeline then obj.to_gid_param
              end
-    opts.merge!(action: 'lti', target_id: target)
-    #user_omniauth_callback_url(opts)
+    user_omniauth_callback_lti_url(target_id: target)
   end
 
   # TODO: Fix me with latest changes from 5.1.4
@@ -76,12 +88,8 @@ module ApplicationHelper
 
   def avalon_image_tag(document, image_options)
     image_url = image_for(document)
-    if image_url.present?
-      link_to(media_object_path(document[:id]), {class: 'result-thumbnail'}) do
-        image_tag(image_url)
-      end
-    else
-      image_tag 'no_icon.png', class: 'result-thumbnail'
+    link_to(media_object_path(document[:id]), {class: 'result-thumbnail'}) do
+      image_url.present? ? image_tag(image_url) : image_tag('no_icon.png')
     end
   end
 
@@ -90,10 +98,10 @@ module ApplicationHelper
     return if sanitized_values.empty? and default.nil?
     sanitized_values = Array(default) if sanitized_values.empty?
     label = label.pluralize(sanitized_values.size)
-    result = content_tag(:dt, label) +
-    content_tag(:dd) {
-      safe_join(sanitized_values,'; ')
-    }
+    contents = content_tag(:dd) do
+      content_tag(:pre) { safe_join(sanitized_values, '; ') }
+    end
+    content_tag(:dt, label) + contents
   end
 
   def search_result_label item
@@ -106,7 +114,7 @@ module ApplicationHelper
     if item['duration_ssi'].present?
       duration = item['duration_ssi']
       if duration.respond_to?(:to_i) && duration.to_i > 0
-        label += " (#{milliseconds_to_formatted_time(duration.to_i)})"
+        label += " (#{milliseconds_to_formatted_time(duration.to_i, false)})"
       end
     end
 
@@ -130,27 +138,53 @@ module ApplicationHelper
 
   # the mediainfo gem returns duration as milliseconds
   # see attr_reader.rb line 48 in the mediainfo source
-  def milliseconds_to_formatted_time( milliseconds )
+  def milliseconds_to_formatted_time(milliseconds, include_fractions = true)
     total_seconds = milliseconds / 1000
     hours = total_seconds / (60 * 60)
     minutes = (total_seconds / 60) % 60
     seconds = total_seconds % 60
+    fractional_seconds = milliseconds.to_s[-3, 3].to_i
+    fractional_seconds = (include_fractions && fractional_seconds.positive? ? ".#{fractional_seconds}" : '')
 
     output = ''
     if hours > 0
       output += "#{hours}:"
     end
 
-    output += "#{minutes.to_s.rjust(2,'0')}:#{seconds.to_s.rjust(2,'0')}"
+    output += "#{minutes.to_s.rjust(2,'0')}:#{seconds.to_s.rjust(2,'0')}#{fractional_seconds}"
     output
   end
 
-  # display millisecond times in HH:MM:SS format
+  # display millisecond times in HH:MM:SS.sss format
   # @param [Float] milliseconds the time to convert
-  # @return [String] time in HH:MM:SS
-  def pretty_time( milliseconds )
-    duration = milliseconds/1000
-    Time.at(duration).utc.strftime(duration<3600?'%M:%S':'%H:%M:%S')
+  # @return [String] time in HH:MM:SS.sss
+  def pretty_time(milliseconds)
+    milliseconds = Float(milliseconds).to_int # will raise TypeError or ArgumentError if unparsable as a Float
+    return "00:00:00.000" if milliseconds <= 0
+
+    total_seconds = milliseconds / 1000.0
+    hours = (total_seconds / (60 * 60)).to_i.to_s.rjust(2, "0")
+    minutes = ((total_seconds / 60) % 60).to_i.to_s.rjust(2, "0")
+    seconds = (total_seconds % 60).to_i.to_s.rjust(2, "0")
+    frac_seconds = (milliseconds % 1000).to_s.rjust(3, "0")[0..2]
+    hours + ":" + minutes + ":" + seconds + "." + frac_seconds
+  end
+
+  FLOAT_PATTERN = Regexp.new(/^\d+([.]\d*)?$/).freeze
+
+  def parse_hour_min_sec(s)
+    return nil if s.nil?
+    smh = s.split(':').reverse
+    (0..2).each do |i|
+      smh[i] = FLOAT_PATTERN.match?(smh[i]) ? Float(smh[i]) : 0
+    end
+    smh[0] + (60 * smh[1]) + (3600 * smh[2])
+  end
+
+  def parse_media_fragment(fragment)
+    return 0, nil unless fragment.present?
+    f_start, f_end = fragment.split(',')
+    [parse_hour_min_sec(f_start), parse_hour_min_sec(f_end)]
   end
 
   def git_commit_info pattern="%s %s [%s]"
@@ -208,5 +242,25 @@ module ApplicationHelper
     @view_flow.set(:layout, output_buffer)
     output = render(:file => "layouts/#{layout}")
     self.output_buffer = ActionView::OutputBuffer.new(output)
+  end
+
+  def object_supplemental_file_path(object, file)
+    if object.is_a?(MasterFile) || object.try(:model) == MasterFile
+      master_file_supplemental_file_path(master_file_id: object.id, id: file.id)
+    elsif object.is_a? MediaObject
+      media_object_supplemental_file_path(media_object_id: object.id, id: file.id)
+    else
+      nil
+    end
+  end
+
+  def object_supplemental_files_path(object)
+    if object.is_a? MasterFile
+      master_file_supplemental_files_path(object.id)
+    elsif object.is_a? MediaObject
+      media_object_supplemental_files_path(object.id)
+    else
+      nil
+    end
   end
 end

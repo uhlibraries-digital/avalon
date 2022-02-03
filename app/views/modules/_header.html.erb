@@ -1,45 +1,36 @@
-<div class="uhl-header">
-  <div class="content">
-    <header>
-      <div class="header-links">
-        <div class="content">
-          <div class="uhlib-logo">
-            <a href="https://libraries.uh.edu" title="University of Houston Libraries">
-              <%= image_tag("secondary-logo.svg", 
-                :alt => "University of Houston Libraries logo",
-                :title => "University of Houston Libraries") %>
-            </a>
-          </div>
-          <div class="uhlib-links">
-            <ul>
-              <li>
-                <%= 
-                  link_to "Contact Us", "https://libraries.uh.edu/contact", 
-                    :class => "contact",
-                    :title => "Contact Us" 
-                %>
-              </li>
-              <li>
-                <%= 
-                  link_to "My Accounts", "https://libraries.uh.edu/my-accounts", 
-                    :class => "accounts",
-                    :title => "My Accounts"
-                %>
-              </li>
-              <li>
-                <a href="https://libraries.uh.edu/giving" title="Give to UH Libraries" class="giving">
-                  <svg viewBox="0 0 24 24"><path d="M19.33,12.44l0.88,0.3c0.33,0.08,0.71,0.13,1.1,0.09l0.53-0.11c0,0,0,0,0,0l0,0L24,12.26V6.05l-6.49-1.08 c-1.8-0.29-3-0.14-3.72,0.06c-0.26,0.11-0.57,0.24-0.9,0.38h0l0,0c-1.58,0.67-3.7,1.55-4.37,1.83C8.1,7.47,7.89,7.97,8.06,8.44 c0.18,0.52,0.75,0.8,1.27,0.61c0.01,0,0.01,0,0.01,0l3.14-0.94c0.37-0.1,0.72-0.2,1.03-0.28l0.2-0.05c0.76-0.2,0.99-0.24,1.83-0.07 c0.59,0.12,3.12,0.81,3.28,0.85c0.28,0.07,0.45,0.36,0.38,0.64c-0.07,0.28-0.36,0.45-0.64,0.38c-0.04-0.01-2.67-0.67-3.24-0.78 c-0.33-0.07-0.51-0.09-0.69-0.08c-0.37,0.1-0.67,0.39-0.77,0.76c-0.17,0.58,0.17,1.2,0.75,1.36c0.04,0.01,0.08,0.03,0.12,0.05 L19.33,12.44L19.33,12.44L19.33,12.44z"></path><path d="M4.67,11.56l-0.88-0.3c-0.33-0.08-0.72-0.13-1.1-0.09l-0.53,0.11l0,0l0,0L0,11.74v6.21l6.49,1.07 c1.8,0.29,3,0.14,3.72-0.06c0.26-0.11,0.57-0.24,0.9-0.38v0v0c1.58-0.67,3.7-1.55,4.37-1.83c0.42-0.23,0.63-0.73,0.47-1.2 c-0.18-0.52-0.75-0.8-1.27-0.61c-0.01,0-0.01,0-0.01,0l-3.14,0.94c-0.37,0.11-0.72,0.2-1.03,0.28l-0.2,0.05 c-0.76,0.2-0.99,0.24-1.83,0.07c-0.6-0.12-3.12-0.81-3.28-0.85C4.9,15.37,4.73,15.08,4.8,14.8c0.07-0.28,0.36-0.45,0.64-0.38 c0.04,0.01,2.67,0.67,3.24,0.78c0.33,0.07,0.51,0.09,0.69,0.08c0.37-0.1,0.67-0.39,0.77-0.76c0.17-0.58-0.17-1.2-0.75-1.36 c-0.04-0.01-0.08-0.03-0.12-0.05L4.67,11.56L4.67,11.56L4.67,11.56z"></path></svg>
-                  Give to UH Libraries
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
+<%#
+Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+  University.  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  specific language governing permissions and limitations under the License.
+---  END LICENSE_HEADER BLOCK  ---
+%>
+<div class="custom-header">
+  <div class="container">
+    <header class="header-wrapper">
+      <div class="header-logo">
+        <%= link_to main_app.root_path do %>
+        <%= image_tag "Home.png", class: "img-responvies", alt: "Avalon Media System - #{t(:release_label)} #{Avalon::VERSION}" %>
+        <% end %>
       </div>
-      <div class="site-name">
-        <div class="content">
-          <h1><%= link_to "Audio/Video Repository", root_path, :title => "University of Libraries Audio Video Repository" %></h1>
-        </div>
+
+      <% unless current_page?(main_app.root_path) %>
+      <div class="header-search">
+        <%= render :partial=>'modules/avalon_search_form' %>
+      </div>
+      <% end %>
+
+      <%# By default shift log in / log out to the header %>
+      <div class="text-right log-in-out text-muted header-user">
+        <%= render 'modules/user_management' %>
       </div>
     </header>
   </div>

@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -34,19 +34,19 @@ describe ApplicationHelper do
 
   describe "#stream_label_for" do
     it "should return the label first if it is available" do
-      master_file = FactoryGirl.build(:master_file, title: 'Label')
+      master_file = FactoryBot.build(:master_file, title: 'Label')
       expect(master_file.file_location).not_to be_nil
       expect(master_file.title).not_to be_nil
       expect(helper.stream_label_for(master_file)).to eq('Label')
     end
     it "should return the filename second if it is available" do
-      master_file = FactoryGirl.build(:master_file, title: nil)
+      master_file = FactoryBot.build(:master_file, title: nil)
       expect(master_file.file_location).not_to be_nil
       expect(master_file.title).to be_nil
       expect(helper.stream_label_for(master_file)).to eq(File.basename(master_file.file_location))
     end
     it "should handle empty file_locations and labels" do
-      master_file = FactoryGirl.build(:master_file, file_location: nil, title: nil)
+      master_file = FactoryBot.build(:master_file, file_location: nil, title: nil)
       expect(master_file.file_location).to be_nil
       expect(master_file.title).to be_nil
       expect(helper.stream_label_for(master_file)).to eq(master_file.id)
@@ -55,16 +55,20 @@ describe ApplicationHelper do
 
   describe '.lti_share_url_for' do
     it 'forms a proper lti share url for media objects' do
-      media_object = FactoryGirl.create(:media_object)
+      media_object = FactoryBot.create(:media_object)
       expect(helper.lti_share_url_for(media_object)).to eq "http://test.host/users/auth/lti/callback?target_id=#{media_object.id}"
     end
     it 'forms a proper lti share url for master files' do
-      master_file = FactoryGirl.create(:master_file)
+      master_file = FactoryBot.create(:master_file)
       expect(helper.lti_share_url_for(master_file)).to eq "http://test.host/users/auth/lti/callback?target_id=#{master_file.id}"
     end
     it 'forms a proper lti share url for playlists' do
-      playlist = FactoryGirl.create(:playlist)
+      playlist = FactoryBot.create(:playlist)
       expect(helper.lti_share_url_for(playlist)).to eq "http://test.host/users/auth/lti/callback?target_id=#{playlist.to_gid_param}"
+    end
+    it 'forms a proper lti share url for timelines' do
+      timeline = FactoryBot.create(:timeline)
+      expect(helper.lti_share_url_for(timeline)).to eq "http://test.host/users/auth/lti/callback?target_id=#{timeline.to_gid_param}"
     end
   end
 
@@ -104,6 +108,8 @@ describe ApplicationHelper do
       expect(helper.milliseconds_to_formatted_time(1000)).to eq("00:01")
       expect(helper.milliseconds_to_formatted_time(60000)).to eq("01:00")
       expect(helper.milliseconds_to_formatted_time(3600000)).to eq("1:00:00")
+      expect(helper.milliseconds_to_formatted_time(1123)).to eq("00:01.123")
+      expect(helper.milliseconds_to_formatted_time(1123, false)).to eq("00:01")
     end
   end
 
@@ -149,11 +155,76 @@ describe ApplicationHelper do
     end
 
     it "should return a pluralized label and semicolon-separated string for multiple values" do
-      expect(helper.display_metadata("Label", ["Value1", "Value2"])).to eq("<dt>Labels</dt><dd>Value1; Value2</dd>")
+      expect(helper.display_metadata("Label", ["Value1", "Value2"])).to eq("<dt>Labels</dt><dd><pre>Value1; Value2</pre></dd>")
     end
 
     it "should return a default value if provided" do
-      expect(helper.display_metadata("Label", [""], "Default value")).to eq("<dt>Label</dt><dd>Default value</dd>")
+      expect(helper.display_metadata("Label", [""], "Default value")).to eq("<dt>Label</dt><dd><pre>Default value</pre></dd>")
+    end
+  end
+
+  describe "#pretty_time" do
+    it 'returns a formatted time' do
+      expect(helper.pretty_time(0)).to eq '00:00:00.000'
+      expect(helper.pretty_time(1)).to eq '00:00:00.001'
+      expect(helper.pretty_time(9)).to eq '00:00:00.009'
+      expect(helper.pretty_time(10)).to eq '00:00:00.010'
+      expect(helper.pretty_time(101)).to eq '00:00:00.101'
+      expect(helper.pretty_time(1010)).to eq '00:00:01.010'
+      expect(helper.pretty_time(10101)).to eq '00:00:10.101'
+      expect(helper.pretty_time(101010)).to eq '00:01:41.010'
+      expect(helper.pretty_time(1010101)).to eq '00:16:50.101'
+      expect(helper.pretty_time(10101010)).to eq '02:48:21.010'
+      expect(helper.pretty_time(0.0)).to eq '00:00:00.000'
+      expect(helper.pretty_time(0.1)).to eq '00:00:00.000'
+      expect(helper.pretty_time(1.1)).to eq '00:00:00.001'
+      expect(helper.pretty_time(-1000)).to eq '00:00:00.000'
+      expect(helper.pretty_time('0')).to eq '00:00:00.000'
+      expect(helper.pretty_time('1')).to eq '00:00:00.001'
+      expect(helper.pretty_time('10101010')).to eq '02:48:21.010'
+      expect(helper.pretty_time('-1000')).to eq '00:00:00.000'
+      expect(helper.pretty_time('0.0')).to eq '00:00:00.000'
+      expect(helper.pretty_time('0.1')).to eq '00:00:00.000'
+      expect(helper.pretty_time('1.1')).to eq '00:00:00.001'
+    end
+
+    it 'returns an exception when not a number' do
+      expect { helper.pretty_time(nil) }.to raise_error(TypeError)
+      expect { helper.pretty_time('foo') }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "#object_supplemental_file_path" do
+    let(:supplemental_file) { FactoryBot.create(:supplemental_file) }
+    let(:supplemental_files_json) { [supplemental_file.to_global_id.to_s].to_json }
+
+    let(:master_file) { FactoryBot.create(:master_file, supplemental_files_json: supplemental_files_json) }
+    let(:media_object) { FactoryBot.create(:media_object, supplemental_files_json: supplemental_files_json) }
+
+    context 'MasterFile' do
+      it 'returns masterfile_supplemental_file_path' do
+        expect(helper.object_supplemental_file_path(master_file, supplemental_file)).to eq(
+          "/master_files/#{master_file.id}/supplemental_files/#{supplemental_file.id}"
+        )
+      end
+    end
+
+    context 'SpeedyAF(MasterFile)' do
+      let(:presenter) { SpeedyAF::Proxy::MasterFile.find(master_file.id) }
+
+      it 'returns masterfile_supplemental_file_path' do
+        expect(helper.object_supplemental_file_path(presenter, supplemental_file)).to eq(
+          "/master_files/#{master_file.id}/supplemental_files/#{supplemental_file.id}"
+        )
+      end
+    end
+
+    context 'MediaObject' do
+      it 'returns mediaobject_supplemental_file_path' do
+        expect(helper.object_supplemental_file_path(media_object, supplemental_file)).to eq(
+          "/media_objects/#{media_object.id}/supplemental_files/#{supplemental_file.id}"
+        )
+      end
     end
   end
 end

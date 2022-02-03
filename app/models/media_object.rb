@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -23,6 +23,8 @@ class MediaObject < ActiveFedora::Base
   include Identifier
   include MigrationTarget
   include SpeedyAF::OrderedAggregationIndex
+  include MediaObjectIntercom
+  include SupplementalFileBehavior
   require 'avalon/controlled_vocabulary'
 
   include Kaminari::ActiveFedoraModelExtension
@@ -54,9 +56,14 @@ class MediaObject < ActiveFedora::Base
   validate  :validate_dates, if: :resource_description_active?
   validate  :validate_note_type, if: :resource_description_active?
   validate  :report_missing_attributes, if: :resource_description_active?
+  validate  :validate_rights_statement, if: :resource_description_active?
 
   def resource_description_active?
     workflow.completed?("file-upload")
+  end
+
+  def validate_rights_statement
+    errors.add(:rights_statement, "Rights statement (#{rights_statement}) not in controlled vocabulary") unless rights_statement.nil? || ModsDocument::RIGHTS_STATEMENTS.keys.include?(rights_statement)
   end
 
   def validate_note_type
@@ -101,6 +108,9 @@ class MediaObject < ActiveFedora::Base
   property :identifier, predicate: ::RDF::Vocab::Identifiers.local, multiple: true do |index|
     index.as :symbol
   end
+  property :comment, predicate: ::RDF::Vocab::EBUCore.comments, multiple: true do |index|
+    index.as :stored_searchable
+  end
 
   ordered_aggregation :master_files, class_name: 'MasterFile', through: :list_source
   # ordered_aggregation gives you accessors media_obj.master_files and media_obj.ordered_master_files
@@ -142,7 +152,6 @@ class MediaObject < ActiveFedora::Base
   # omit the status which will default to unpublished. This makes the act
   # of publishing _explicit_ instead of an accidental side effect.
   def publish!(user_key)
-    UpdateArkIdentifierJob::Create.perform_later(self.id)
     self.avalon_publisher = user_key.blank? ? nil : user_key
     save!
   end
@@ -189,6 +198,14 @@ class MediaObject < ActiveFedora::Base
     self.set_resource_types!
   end
 
+  def all_comments
+    comment.sort + ordered_master_files.to_a.compact.collect do |mf|
+      mf.comment.reject(&:blank?).collect do |c|
+        mf.display_title.present? ? "[#{mf.display_title}] #{c}" : c
+      end.sort
+    end.flatten.uniq
+  end
+
   def section_labels
     all_labels = master_files.collect{|mf|mf.structural_metadata_labels << mf.title}
     all_labels.flatten.uniq.compact
@@ -206,9 +223,9 @@ class MediaObject < ActiveFedora::Base
 
   def to_solr
     super.tap do |solr_doc|
-      solr_doc[Solrizer.default_field_mapper.solr_name("workflow_published", :facetable, type: :string)] = published? ? 'Published' : 'Unpublished'
-      solr_doc[Solrizer.default_field_mapper.solr_name("collection", :symbol, type: :string)] = collection.name if collection.present?
-      solr_doc[Solrizer.default_field_mapper.solr_name("unit", :symbol, type: :string)] = collection.unit if collection.present?
+      solr_doc[ActiveFedora.index_field_mapper.solr_name("workflow_published", :facetable, type: :string)] = published? ? 'Published' : 'Unpublished'
+      solr_doc[ActiveFedora.index_field_mapper.solr_name("collection", :symbol, type: :string)] = collection.name if collection.present?
+      solr_doc[ActiveFedora.index_field_mapper.solr_name("unit", :symbol, type: :string)] = collection.unit if collection.present?
       solr_doc['read_access_virtual_group_ssim'] = virtual_read_groups + leases('external').map(&:inherited_read_groups).flatten
       solr_doc['read_access_ip_group_ssim'] = collect_ips_for_index(ip_read_groups + leases('ip').map(&:inherited_read_groups).flatten)
       solr_doc[Hydra.config.permissions.read.group] ||= []
@@ -216,7 +233,7 @@ class MediaObject < ActiveFedora::Base
       solr_doc["title_ssort"] = self.title
       solr_doc["creator_ssort"] = Array(self.creator).join(', ')
       solr_doc["date_digitized_sim"] = master_files.collect {|mf| mf.date_digitized }.compact.map {|t| Time.parse(t).strftime "%F" }
-      solr_doc["date_ingested_sim"] = self.create_date.strftime "%F"
+      solr_doc["date_ingested_sim"] = self.create_date.strftime "%F" if self.create_date.present?
       #include identifiers for parts
       solr_doc["other_identifier_sim"] +=  master_files.collect {|mf| mf.identifier.to_a }.flatten
       #include labels for parts and their structural metadata
@@ -225,7 +242,7 @@ class MediaObject < ActiveFedora::Base
       solr_doc['section_physical_description_ssim'] = section_physical_descriptions
       solr_doc['avalon_resource_type_ssim'] = self.avalon_resource_type.map(&:titleize)
       solr_doc['identifier_ssim'] = self.identifier.map(&:downcase)
-
+      solr_doc['all_comments_sim'] = all_comments
       #Add all searchable fields to the all_text_timv field
       all_text_values = []
       all_text_values << solr_doc["title_tesi"]
@@ -255,12 +272,15 @@ class MediaObject < ActiveFedora::Base
       id: id,
       title: title,
       collection: collection.name,
+      unit: collection.unit,
       main_contributors: creator,
       publication_date: date_created,
       published_by: avalon_publisher,
       published: published?,
-      summary: abstract
-    }
+      summary: abstract,
+      visibility: visibility,
+      read_groups: read_groups
+    }.merge(to_ingest_api_hash(options.fetch(:include_structure, false)))
   end
 
   # Other validation to consider adding into future iterations is the ability to
@@ -305,6 +325,45 @@ class MediaObject < ActiveFedora::Base
 
   def leases(scope=:all)
     governing_policies.select { |gp| gp.is_a?(Lease) and (scope == :all or gp.lease_type == scope) }
+  end
+
+  # @return [Array<MediaObject>, Array<MediaObject>] A list of all succesfully merged and a list of failed media objects
+  def merge!(media_objects)
+    mergeds = []
+    faileds = []
+    media_objects.dup.each do |mo|
+      begin
+        # TODO: mass assignment may speed things up
+        mo.ordered_master_files.to_a.dup.each { |mf| mf.media_object = self }
+        mo.reload.destroy!
+
+        mergeds << mo
+      rescue StandardError => e
+        mo.errors.add(:base, "MediaObject #{mo.id} failed to merge successfully: #{e.full_message}")
+        faileds << mo
+      end
+    end
+    [mergeds, faileds]
+  end
+
+  def access_text
+    actors = []
+    if visibility == "public"
+      actors << "the public"
+    else
+      actors << "collection staff" if visibility == "private"
+      actors << "specific users" if read_users.any? || leases('user').any?
+
+      if visibility == "restricted"
+        actors << "logged-in users"
+      elsif virtual_read_groups.any? || local_read_groups.any? || leases('external').any? || leases('local').any?
+        actors << "users in specific groups"
+      end
+
+      actors << "users in specific IP Ranges" if ip_read_groups.any? || leases('ip').any?
+    end
+
+    "This item is accessible by: #{actors.join(', ')}."
   end
 
   private

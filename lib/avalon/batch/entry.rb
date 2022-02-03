@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -18,9 +18,9 @@ require 'active_model'
 module Avalon
   module Batch
     class Entry
-    	extend ActiveModel::Translation
+      extend ActiveModel::Translation
 
-    	attr_reader :fields, :files, :opts, :row, :errors, :manifest, :collection
+      attr_reader :fields, :files, :opts, :row, :errors, :manifest, :collection
 
       def initialize(fields, files, opts, row, manifest)
         @fields = fields || opts[:fields]
@@ -35,11 +35,10 @@ module Avalon
       end
 
       def media_object
-        @media_object ||= MediaObject.new(avalon_uploader: user_key,
-                                          collection: collection).tap do |mo|
+        @media_object ||= MediaObject.new(avalon_uploader: user_key, collection: collection).tap do |mo|
           mo.workflow.origin = 'batch'
           mo.workflow.last_completed_step = HYDRANT_STEPS.last.step
-          if Avalon::BibRetriever.configured? and fields[:bibliographic_id].present?
+          if Avalon::BibRetriever.configured?(fields[:bibliographic_id_label]) && fields[:bibliographic_id].present?
             begin
               mo.descMetadata.populate_from_catalog!(fields[:bibliographic_id].first, Array(fields[:bibliographic_id_label]).first)
             rescue Exception => e
@@ -201,6 +200,15 @@ module Avalon
           files = self.class.gatherFiles(file_spec[:file])
           self.class.attach_datastreams_to_master_file(master_file, file_spec[:file])
           master_file.setContent(files)
+
+          # Overwrite files hash with working file paths to pass to matterhorn
+          if files.is_a?(Hash) && master_file.working_file_path.present?
+            files.each do |quality, file|
+              working_path = master_file.working_file_path.find { |path| File.basename(file) == File.basename(path) }
+              files[quality] = File.new(working_path)
+            end
+          end
+
           master_file.absolute_location = file_spec[:absolute_location] if file_spec[:absolute_location].present?
           master_file.title = file_spec[:label] if file_spec[:label].present?
           master_file.poster_offset = file_spec[:offset] if file_spec[:offset].present?
@@ -213,7 +221,7 @@ module Avalon
             media_object.save
             master_file.process(files)
           else
-            logger.error "Problem saving MasterFile(#{master_file.id}): #{master_file.errors.full_messages.to_sentence}"
+            Rails.logger.error "Problem saving MasterFile(#{master_file.id}): #{master_file.errors.full_messages.to_sentence}"
           end
         end
         # context = { media_object: media_object, user: @manifest.package.user.user_key, hidden: opts[:hidden] ? '1' : nil }
@@ -226,7 +234,7 @@ module Avalon
         end
 
         unless media_object.save
-          logger.error "Problem saving MediaObject: #{media_object}"
+          Rails.logger.error "Problem saving MediaObject: #{media_object}"
         end
 
         media_object

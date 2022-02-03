@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -176,6 +176,11 @@ EOC
     $stderr.puts
   end
 
+  desc 'clean out user sessions that have not been updated for 7 days'
+  task session_cleanup: :environment do
+    CleanupSessionJob.perform_now
+  end
+
   namespace :services do
     services = ["jetty", "felix", "delayed_job"]
     desc "Start Avalon's dependent services"
@@ -214,15 +219,7 @@ EOC
   namespace :batch do
     desc "Starts Avalon batch ingest"
     task :ingest => :environment do
-      # Starts the ingest process
-      require 'avalon/batch/ingest'
-
-      WithLocking.run(name: 'batch_ingest') do
-        logger.info "<< Scanning for new batch packages in existing collections >>"
-        Admin::Collection.all.each do |collection|
-          Avalon::Batch::Ingest.new(collection).scan_for_packages
-        end
-      end
+      BatchScanJob.perform_now
     end
 
     desc "Starts Status Checking and Email Notification of Existing Batches"
@@ -236,7 +233,7 @@ EOC
     end
   end
   namespace :user do
-    desc "Create user (assumes identity authentication)"
+    desc "Create user (assumes database authentication)"
     task :create => :environment do
       if ENV['avalon_username'].nil? or ENV['avalon_password'].nil?
         abort "You must specify a username and password.  Example: rake avalon:user:create avalon_username=user@example.edu avalon_password=password avalon_groups=group1,group2"
@@ -245,10 +242,9 @@ EOC
       require 'avalon/role_controls'
       username = ENV['avalon_username'].dup
       password = ENV['avalon_password']
-      groups = ENV['avalon_groups'].split(",")
+      groups = ENV['avalon_groups'].nil? ? [] : ENV['avalon_groups'].split(",")
 
-      Identity.create!(email: username, password: password, password_confirmation: password)
-      User.create!(username: username, email: username)
+      User.create!(username: username, email: username, password: password, password_confirmation: password)
       groups.each do |group|
         Avalon::RoleControls.add_role(group) unless Avalon::RoleControls.role_exists? group
         Avalon::RoleControls.add_user_role(username, group)
@@ -266,7 +262,6 @@ EOC
       username = ENV['avalon_username'].dup
       groups = Avalon::RoleControls.user_roles username
 
-      Identity.where(email: username).destroy_all
       User.where(Devise.authentication_keys.first => username).destroy_all
       groups.each do |group|
         Avalon::RoleControls.remove_user_role(username, group)
@@ -274,7 +269,7 @@ EOC
 
       puts "Deleted user #{username} and removed them from groups #{groups}"
     end
-    desc "Change password (assumes identity authentication)"
+    desc "Change password (assumes database authentication)"
     task :passwd => :environment do
       if ENV['avalon_username'].nil? or ENV['avalon_password'].nil?
         abort "You must specify a username and password.  Example: rake avalon:user:passwd avalon_username=user@example.edu avalon_password=password"
@@ -282,23 +277,54 @@ EOC
 
       username = ENV['avalon_username'].dup
       password = ENV['avalon_password']
-      Identity.where(email: username).each {|identity| identity.password = password; identity.save}
+      User.where(email: username).each {|user| user.password = password; user.save}
 
       puts "Updated password for user #{username}"
+    end
+
+    desc "Assign user an an administrator"
+    task admin: :environment do
+      puts "Assign user as an administrator"
+      print "Email address for user: "
+      email_address = $stdin.gets.chomp
+      begin
+        new_administrator = User.find_by_email(email_address).user_key
+      rescue NoMethodError
+        abort "User with email address #{email_address} not found"
+      end
+      admin_group = Admin::Group.find('administrator')
+      if admin_group.users.any? new_administrator
+        puts "User with email address #{email_address} is already an administrator"
+      else
+        admin_group.users = admin_group.users + [new_administrator]
+        admin_group.save
+        puts "Successfully assigned #{new_administrator} as an administrator"
+      end
     end
   end
 
   namespace :test do
     desc "Create a test media object"
     task :media_object => :environment do
-      require 'factory_girl'
+      if ENV['collection'].blank?
+        abort "You must specify a collection.  Example: rake avalon:test:media_object collection=abcd1234"
+      end
+
+      require 'factory_bot'
       require 'faker'
       Dir[Rails.root.join("spec/factories/**/*.rb")].each {|f| require f}
 
       mf_count = [ENV['master_files'].to_i,1].max
-      mo = FactoryGirl.create(:media_object)
+      id = ENV['id']
+      begin
+        collection = Admin::Collection.find(ENV['collection'])
+      rescue ActiveFedora::ObjectNotFoundError
+        abort "Collection #{ENV['collection']} not found."
+      end
+      params = { id: id, collection: collection }.reject { |_k, v| v.blank? }
+      mo = FactoryBot.create(:media_object, params)
       mf_count.times do |i|
-        FactoryGirl.create(:master_file_with_derivative, mediaobject: mo)
+        FactoryBot.create(:master_file, :with_derivative, media_object: mo)
       end
       puts mo.id
     end

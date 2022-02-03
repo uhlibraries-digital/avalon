@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -15,7 +15,7 @@
 module BulkActionJobs
   class AccessControl < ActiveJob::Base
     queue_as :bulk_access_control
-    def perform documents, params
+    def perform(documents, params)
       errors = []
       successes = []
       documents.each do |id|
@@ -101,7 +101,7 @@ module BulkActionJobs
   end
 
   class UpdateStatus < ActiveJob::Base
-    def perform documents, user_key, params
+    def perform(documents, user_key, params)
       errors = []
       successes = []
       status = params['action']
@@ -129,7 +129,7 @@ module BulkActionJobs
   end
 
   class Delete < ActiveJob::Base
-    def perform documents, params
+    def perform(documents, _params)
       errors = []
       successes = []
       documents.each do |id|
@@ -145,7 +145,7 @@ module BulkActionJobs
   end
 
   class Move < ActiveJob::Base
-    def perform documents, params
+    def perform(documents, params)
       collection = Admin::Collection.find( params[:target_collection_id] )
       errors = []
       successes = []
@@ -159,6 +159,72 @@ module BulkActionJobs
         end
       end
       return successes, errors
+    end
+  end
+
+  require 'avalon/intercom'
+
+  class IntercomPush < ActiveJob::Base
+    def perform(documents, user_key, params)
+      errors = []
+      successes = []
+      intercom = Avalon::Intercom.new(user_key)
+      documents.each do |id|
+        media_object = MediaObject.find(id)
+        result = intercom.push_media_object(media_object, params[:collection_id], params[:include_structure] == 'true')
+        if result[:link].present?
+          successes += [media_object]
+        elsif result[:status].present?
+          error = "There was an error pushing the item. (#{result[:status]}: #{result[:message]})"
+          media_object.errors[:base] << [error]
+          errors += [media_object]
+        else
+          media_object.errors[:base] << [result[:message]]
+          errors += [media_object]
+        end
+      end
+      [successes, errors]
+    end
+  end
+
+  class Merge < ActiveJob::Base
+    def perform(target_id, subject_ids)
+      target = MediaObject.find target_id
+      subjects = subject_ids.map { |id| MediaObject.find id }
+      return target.merge!(subjects)
+    end
+  end
+
+  class ApplyCollectionAccessControl < ActiveJob::Base
+    queue_as :bulk_access_control
+    def perform(collection_id, overwrite = true)
+      errors = []
+      successes = []
+      collection = Admin::Collection.find collection_id
+      collection.media_object_ids.each do |id|
+        media_object = MediaObject.find(id)
+        media_object.hidden = collection.default_hidden
+        media_object.visibility = collection.default_visibility
+
+        # Special access
+        if overwrite
+          media_object.read_groups = collection.default_read_groups.to_a
+          media_object.read_users = collection.default_read_users.to_a
+        else
+          media_object.read_groups += collection.default_read_groups.to_a
+          media_object.read_groups.uniq!
+          media_object.read_users += collection.default_read_users.to_a
+          media_object.read_users.uniq!
+        end
+
+        if media_object.save
+          successes << media_object
+        else
+          errors << media_object
+        end
+      end
+
+      [successes, errors]
     end
   end
 end

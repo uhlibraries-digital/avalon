@@ -1,22 +1,36 @@
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+#   University.  Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+#   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#   CONDITIONS OF ANY KIND, either express or implied. See the License for the
+#   specific language governing permissions and limitations under the License.
+# ---  END LICENSE_HEADER BLOCK  ---
+
 class BatchRegistriesMailer < ApplicationMailer
-  def batch_ingest_validation_error( package, errors )
+  def batch_ingest_validation_error(package, errors)
     @package = package
     @errors = errors
     email = package.user.email if package.user
     email ||= Settings.email.notification
     mail(
       to: email,
-      subject: "Failed batch ingest registration for: #{package.title}",
+      subject: "Failed batch ingest registration for: #{package.title}"
     )
   end
 
-  def batch_ingest_validation_success( package )
+  def batch_ingest_validation_success(package)
     @package = package
     email = package.user.email
     mail(
       to: email,
       from: Settings.email.notification,
-      subject: "Successfully registered batch ingest: #{package.title}",
+      subject: "Successfully registered batch ingest: #{package.title}"
     )
   end
 
@@ -26,15 +40,17 @@ class BatchRegistriesMailer < ApplicationMailer
     @user = User.find(@batch_registry.user_id)
     email = @user.email unless @user.nil?
     email ||= Settings.email.notification
-    @error_items = BatchEntries.where(batch_registries_id: @batch_registry.id, error: true)
-    @completed_items = BatchEntries.where(batch_registries_id: @batch_registry.id, complete: true)
+    @error_items = BatchEntries.where(batch_registries_id: @batch_registry.id, error: true).order(position: :asc)
+    @completed_items = BatchEntries.where(batch_registries_id: @batch_registry.id, complete: true).order(position: :asc)
     prefix = "Success:"
     prefix = "Errors Present:" unless @error_items.empty?
+    collection_text = Admin::Collection.find(@batch_registry.collection).name if Admin::Collection.exists?(@batch_registry.collection)
+    collection_text ||= "Collection"
 
     mail(
       to: email,
       from: Settings.email.notification,
-      subject: "#{prefix} Batch Registry #{@batch_registry.file_name} for #{Admin::Collection.find(@batch_registry.collection).name} has completed"
+      subject: "#{prefix} Batch Registry #{@batch_registry.file_name} for #{collection_text} has completed"
     )
   end
 
@@ -42,10 +58,32 @@ class BatchRegistriesMailer < ApplicationMailer
   def batch_registration_stalled_mailer(batch_registry)
     @batch_registry = batch_registry
     email = Settings.email.notification
+    collection_text = Admin::Collection.find(@batch_registry.collection).name if Admin::Collection.exists?(@batch_registry.collection)
+    collection_text ||= "Collection"
+
     mail(
       to: email,
       from: Settings.email.notification,
-      subject: "Batch Registry #{@batch_registry.file_name} for #{Admin::Collection.find(@batch_registry.collection).name} has stalled"
+      subject: "Batch Registry #{@batch_registry.file_name} for #{collection_text} has stalled"
     )
   end
+
+  # Update the progress of finished (success or error) batch encoding
+  def batch_encoding_finished(batch_registry)
+    @batch_registry = batch_registry
+    @user = User.find(@batch_registry.user_id)
+    @email = @user.email unless @user.nil?
+    @email ||= Settings.email.notification
+    @collection_text = Admin::Collection.find(@batch_registry.collection).name if Admin::Collection.exists?(@batch_registry.collection)
+    @collection_text ||= "Collection"
+
+    @status = @batch_registry.encoding_success? ? "Success" : "Errors Present"
+
+    mail(
+      to: @email,
+      from: Settings.email.notification,
+      subject: "#{@status}: Batch Registry #{@batch_registry.file_name} for #{@collection_text} has finished encoding"
+    )
+  end
+
 end

@@ -1,21 +1,29 @@
 require 'avalon/routing/can_constraint'
 
 Rails.application.routes.draw do
-
-  mount Blacklight::Engine => '/'
-  root to: "catalog#index"
-    concern :searchable, Blacklight::Routes::Searchable.new
+  mount Samvera::Persona::Engine => '/'
+  mount Blacklight::Engine => '/catalog'
+  concern :searchable, Blacklight::Routes::Searchable.new
+  concern :exportable, Blacklight::Routes::Exportable.new
 
   resource :catalog, only: [:index], as: 'catalog', path: '/catalog', controller: 'catalog' do
     concerns :searchable
   end
 
-  concern :exportable, Blacklight::Routes::Exportable.new
+  # For some reason this needs to be after `resource :catalog` otherwise Blacklight will generate links to / instead of /catalog
+  root to: "catalog#index"
 
   get '/mejs/:version', to: 'application#mejs'
 
   resources :solr_documents, only: [:show], path: '/catalog', controller: 'catalog' do
     concerns :exportable
+  end
+
+  resources :encode_records, only: [:show, :index] do
+    collection do
+      post :paged_index
+      post :progress
+    end
   end
 
   resources :bookmarks do
@@ -33,18 +41,20 @@ Rails.application.routes.draw do
       post 'unpublish'#, as: :unpublish_bookmarks
       get 'add_to_playlist'
       post 'add_to_playlist'
+      get 'intercom_push'
+      post 'intercom_push'
+      get 'merge'
+      post 'merge'
     end
   end
 
-  devise_for :users, :controllers => {sessions: 'devise/cas_sessions' }
-
-  #devise_for :users, :controllers => { :omniauth_callbacks => "users/omniauth_callbacks" }, format: false
-  #devise_scope :user do
-  #  match '/users/sign_in', :to => "users/sessions#new", :as => :new_user_session, via: [:get]
-  #  match '/users/sign_out', :to => "users/sessions#destroy", :as => :destroy_user_session, via: [:get]
-  #  match '/users/auth/:provider', to: 'users/omniauth_callbacks#passthru', as: :user_omniauth_authorize, via: [:get, :post]
-  #  match '/users/auth/:action/callback', controller: "users/omniauth_callbacks", as: :user_omniauth_callback, via: [:get, :post]
-  #end
+  devise_for :users, controllers: { omniauth_callbacks: 'users/omniauth_callbacks', sessions: 'users/sessions' }, format: false
+  devise_scope :user do
+    match '/users/auth/:provider', to: 'users/omniauth_callbacks#passthru', as: :user_omniauth_authorize, via: [:get, :post]
+    Avalon::Authentication::Providers.collect { |provider| provider[:provider] }.uniq.each do |provider_name|
+      match "/users/auth/#{provider_name}/callback", to: "users/omniauth_callbacks##{provider_name}", as: "user_omniauth_callback_#{provider_name}".to_sym, via: [:get, :post]
+    end
+  end
 
   mount BrowseEverything::Engine => '/browse'
 
@@ -66,6 +76,9 @@ Rails.application.routes.draw do
         get 'edit'
         get 'remove'
         get 'items'
+        get 'poster'
+        post 'poster', action: :attach_poster, as: 'attach_poster'
+        delete 'poster', action: :remove_poster, as: 'remove_poster'
       end
     end
 
@@ -78,6 +91,12 @@ Rails.application.routes.draw do
   end
 
   resources :vocabulary, except: [:create, :destroy, :new, :edit]
+
+  resources :collections, only: [:index, :show] do
+    member do
+      get :poster
+    end
+  end
 
   resources :media_objects, except: [:create, :update] do
     member do
@@ -95,6 +114,9 @@ Rails.application.routes.draw do
       get :confirm_remove
       get :add_to_playlist_form
       post :add_to_playlist
+      patch :intercom_push
+      get :manifest
+      get :move_preview, defaults: { format: 'json' }, constraints: { format: 'json' }
     end
     collection do
       post :create, action: :create, constraints: { format: 'json' }
@@ -103,10 +125,14 @@ Rails.application.routes.draw do
       put :update_status
       # 'delete' has special signifigance so use 'remove' for now
       delete :remove, :action => :destroy
+      get :intercom_collections
     end
+
+    # Supplemental Files
+    resources :supplemental_files, except: [:new, :index, :edit]
   end
 
-  resources :master_files, except: [:new, :index, :update] do
+  resources :master_files, except: [:new, :index] do
     member do
       get  'thumbnail', :to => 'master_files#get_frame', :defaults => { :type => 'thumbnail' }
       get  'poster',    :to => 'master_files#get_frame', :defaults => { :type => 'poster' }
@@ -118,11 +144,21 @@ Rails.application.routes.draw do
       post 'attach_structure'
       post 'attach_captions'
       get :captions
+      get :waveform
+      match ':quality.m3u8', to: 'master_files#hls_manifest', via: [:get], as: :hls_manifest
+      get 'structure', to: 'master_files#structure', constraints: { format: 'json' }
+      post 'structure', to: 'master_files#set_structure', constraints: { format: 'json' }
+      delete 'structure', to: 'master_files#delete_structure', constraints: { format: 'json' }
+      post 'move'
     end
+
+    # Supplemental Files
+    resources :supplemental_files, except: [:new, :index, :edit]
   end
 
-  resources :derivatives, only: [:create]
+  match "iiif_auth_token/:id", to: 'master_files#iiif_auth_token', via: [:get], as: :iiif_auth_token
 
+  resources :derivatives, only: [:create]
   match "/autocomplete", to: 'objects#autocomplete', via: [:get]
   match "/objects/:id", to: 'objects#show', via: [:get], :as => :objects
   match "/object/:id", to: 'objects#show', via: [:get]
@@ -154,6 +190,22 @@ Rails.application.routes.draw do
 
   resources :playlist_items, only: [:update], :constraints => {:format => /(js|json)/}
 
+  resources :timelines do
+    member do
+      patch 'regenerate_access_token'
+      post 'manifest', to: 'timelines#manifest_update', constraints: { format: 'json' }
+      get 'manifest', constraints: { format: 'json' }
+    end
+    collection do
+      post 'duplicate'
+      post 'paged_index'
+      if Settings['variations'].present?
+        post 'import_variations_timeline'
+      end
+    end
+  end
+  get '/timeliner', to: 'timelines#timeliner', as: :timeliner
+
   resources :dropbox, :only => [] do
     collection do
       delete :bulk_delete
@@ -169,64 +221,8 @@ Rails.application.routes.draw do
   get '/about/health.yaml', to: 'about_page/about#health', defaults: { :format => 'yaml' }
   get '/about/health(.:format)', to: redirect('/')
 
-  constraints(Avalon::Routing::CanConstraint.new(:manage, Resque)) do
-    require 'resque/server'
-    mount Resque::Server, at: '/jobs'
+  constraints(Avalon::Routing::CanConstraint.new(:manage, :jobs)) do
+    mount Sidekiq::Web, at: '/jobs', as: 'jobs'
   end
-  get '/jobs', to: redirect('/')
-
-  # The priority is based upon order of creation: first created -> highest priority.
-  # See how all your routes lay out with "rake routes".
-
-  # You can have the root of your site routed with "root"
-  # root 'welcome#index'
-
-  # Example of regular route:
-  #   get 'products/:id' => 'catalog#view'
-
-  # Example of named route that can be invoked with purchase_url(id: product.id)
-  #   get 'products/:id/purchase' => 'catalog#purchase', as: :purchase
-
-  # Example resource route (maps HTTP verbs to controller actions automatically):
-  #   resources :products
-
-  # Example resource route with options:
-  #   resources :products do
-  #     member do
-  #       get 'short'
-  #       post 'toggle'
-  #     end
-  #
-  #     collection do
-  #       get 'sold'
-  #     end
-  #   end
-
-  # Example resource route with sub-resources:
-  #   resources :products do
-  #     resources :comments, :sales
-  #     resource :seller
-  #   end
-
-  # Example resource route with more complex sub-resources:
-  #   resources :products do
-  #     resources :comments
-  #     resources :sales do
-  #       get 'recent', on: :collection
-  #     end
-  #   end
-
-  # Example resource route with concerns:
-  #   concern :toggleable do
-  #     post 'toggle'
-  #   end
-  #   resources :posts, concerns: :toggleable
-  #   resources :photos, concerns: :toggleable
-
-  # Example resource route within a namespace:
-  #   namespace :admin do
-  #     # Directs /admin/products/* to Admin::ProductsController
-  #     # (app/controllers/admin/products_controller.rb)
-  #     resources :products
-  #   end
+  get '/jobs(.:format)', to: redirect('/')
 end

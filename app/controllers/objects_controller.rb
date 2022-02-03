@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -14,9 +14,7 @@
 
 class ObjectsController < ApplicationController
   def show
-    obj = ActiveFedora::Base.where(identifier_ssim: params[:id].downcase).first
-    obj ||= ActiveFedora::Base.find(params[:id], cast: true) rescue nil
-    obj ||= GlobalID::Locator.locate params[:id]
+    obj = fetch_object params[:id]
     if obj.blank?
       redirect_to root_path
     else
@@ -27,7 +25,7 @@ class ObjectsController < ApplicationController
       end
 
       newparams = params.except(:controller, :action, :id, :urlappend)
-      url.query = newparams.to_query if newparams.present?
+      url.query = newparams.permit!.to_query if newparams.present?
       redirect_to url.to_s
     end
   end

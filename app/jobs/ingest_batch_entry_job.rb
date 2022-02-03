@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -19,8 +19,11 @@ class IngestBatchEntryJob < ActiveJob::Base
   def perform(batch_entry)
     # Validation checking that it is okay to ingest this batch entry
     if batch_entry.media_object_pid.present? && MediaObject.exists?(batch_entry.media_object_pid)
-      published_error(batch_entry)
-      return
+      mo = MediaObject.find(batch_entry.media_object_pid)
+      if mo.published?
+        published_error(batch_entry)
+        return
+      end
     end
 
 

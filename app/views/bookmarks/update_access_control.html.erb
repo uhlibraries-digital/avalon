@@ -1,5 +1,5 @@
 <%#
-Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+Copyright 2011-2020, The Trustees of Indiana University and Northwestern
   University.  Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
 
@@ -45,7 +45,6 @@ Unless required by applicable law or agreed to in writing, software distributed
             </div>
           <% else %>
             <div class="alert hidden">
-                <p><%= t('blacklight.update_access_control.confirm') %></p>
       </div>
             <fieldset class="item-discovery">
         <legend>Discovery</legend>
@@ -81,8 +80,8 @@ Unless required by applicable law or agreed to in writing, software distributed
           <%= text_field_tag "user_display", nil,
         class: "typeahead from-model form-control",
         data: { model: 'user', target: "user" } %><br>
-            <%= text_field_tag "add_user_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %><br>
-            <%= text_field_tag "add_user_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %>
+            <%= text_field_tag "add_user_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %><br>
+            <%= text_field_tag "add_user_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %>
           </div>
           <%= button_tag "Add", name: 'submit_add_user', class:'btn btn-default', value: 'Add' %>
           <%= button_tag "Remove", name: 'submit_remove_user', class:'btn btn-default remove_access', value: 'Remove' %>
@@ -94,8 +93,8 @@ Unless required by applicable law or agreed to in writing, software distributed
           <%= select_tag "group",
         dropdown_values,
         { include_blank: true, class: "form-control"}%><br>
-            <%= text_field_tag "add_group_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %><br>
-            <%= text_field_tag "add_group_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %>
+            <%= text_field_tag "add_group_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %><br>
+            <%= text_field_tag "add_group_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %>
           <%= button_tag "Add", name: 'submit_add_group', class:'btn btn-default', value: 'Add'  %>
           <%= button_tag "Remove", name: 'submit_remove_group', class:'btn btn-default remove_access', value: 'Remove' %>
         <% end %>
@@ -106,8 +105,8 @@ Unless required by applicable law or agreed to in writing, software distributed
           <%= text_field_tag "class_display", nil,
         class: "typeahead from-model form-control",
         data: { model: 'externalGroup', target: "class" } %><br>
-            <%= text_field_tag "add_class_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %><br>
-            <%= text_field_tag "add_class_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %>
+            <%= text_field_tag "add_class_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %><br>
+            <%= text_field_tag "add_class_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %>
           </div>
           <%= button_tag "Add", name: 'submit_add_class', class:'btn btn-default', value: 'Add'  %>
           <%= button_tag "Remove", name: 'submit_remove_class', class:'btn btn-default remove_access', value: 'Remove' %>
@@ -116,8 +115,8 @@ Unless required by applicable law or agreed to in writing, software distributed
           <%= render partial: "modules/tooltip", locals: { form: form, field: 'ipaddress', tooltip: t("access_control.ipaddress"), options: {display_label: t("access_control.ipaddresslabel").html_safe} } %>
           <div style='display:inline-block;top:1px;position:relative;'>
           <%= text_field_tag "ipaddress", nil, class: "form-control" %><br>
-            <%= text_field_tag "add_ipaddress_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %><br>
-            <%= text_field_tag "add_ipaddress_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date' %>
+            <%= text_field_tag "add_ipaddress_begin", nil, placeholder: 'Begin Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %><br>
+            <%= text_field_tag "add_ipaddress_end", nil, placeholder: 'End Date (yyyy-mm-dd)', class: 'form-control date-input access_date', autocomplete: 'off' %>
           </div>
           <%= button_tag "Add", name: 'submit_add_ipaddress', class:'btn btn-default', value: 'Add'  %>
           <%= button_tag "Remove", name: 'submit_remove_ipaddress', class:'btn btn-default remove_access', value: 'Remove' %>

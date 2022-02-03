@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -21,8 +21,9 @@ class CatalogController < ApplicationController
   include Hydra::MultiplePolicyAwareAccessControlsEnforcement
   include BlacklightHelperReloadFix
 
-  # These before_filters apply the hydra access controls
-  before_filter :enforce_show_permissions, only: :show
+  # These before_actions apply the hydra access controls
+  before_action :enforce_show_permissions, only: :show
+  before_action :load_home_page_collections, only: :index, if: proc { helpers.current_page? root_path }
 
   configure_blacklight do |config|
     ## Class for sending and receiving requests from a search index
@@ -180,8 +181,19 @@ class CatalogController < ApplicationController
     # If there are more than this many search results, no spelling ("did you
     # mean") suggestion is offered.
     config.spell_max = 5
+
+    config.fetch_many_document_params = { fl: "*" }
   end
 
+  private
 
-
+    def load_home_page_collections
+      featured_collections = Settings.home_page&.featured_collections
+      if featured_collections.present?
+        builder = ::CollectionSearchBuilder.new(self).rows(100_000)
+        response = repository.search(builder)
+        collection = response.documents.select { |doc| featured_collections.include? doc.id }.sample
+        @featured_collection = ::Admin::CollectionPresenter.new(collection) if collection
+      end
+    end
 end

@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -42,7 +42,6 @@ class AvalonProgress
       info_box = section_node.find('div.alert')
 
       info = @data[id]
-
       if info?
         setActive(bar, info.complete < 100 and (info.status == 'RUNNING' or info.status == 'WAITING'))
 
@@ -58,15 +57,16 @@ class AvalonProgress
 #            updateBar(bar, 'bar-warning', 100)
         bar.data('status',info)
 
-    info = @data['overall']
-    setActive($('#overall'), info.success + info.error < 100)
+    if !info?
+      info = @data['overall']
+      setActive($('#overall'), info.success + info.error < 100)
 
-    updateBar($('#overall'), {success: info.success, danger: info.error})
-    $('#overall').data('status',info)
-    if info.success == 100
-      location.reload()
+      updateBar($('#overall'), {success: info.success, danger: info.error})
+      $('#overall').data('status',info)
+      if info.success == 100
+        location.reload()
 
-    return info.success + info.error < 100
+      return info.success + info.error < 100
 
   click_section: (section_id) ->
     data = @data[section_id]

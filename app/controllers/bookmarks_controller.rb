@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -25,19 +25,23 @@ class BookmarksController < CatalogController
   blacklight_config.show.document_actions[:email].if = false if blacklight_config.show.document_actions[:email]
   blacklight_config.show.document_actions[:citation].if = false if blacklight_config.show.document_actions[:citation]
 
-  self.add_show_tools_partial( :update_access_control, callback: :access_control_action, if: Proc.new { |context, config, options| context.user_can? :update_access_control } )
+  add_show_tools_partial( :update_access_control, callback: :access_control_action, if: Proc.new { |context, config, options| context.user_can? :update_access_control } )
 
-  self.add_show_tools_partial( :move, callback: :move_action, if: Proc.new { |context, config, options| context.user_can? :move } )
+  add_show_tools_partial( :move, callback: :move_action, if: Proc.new { |context, config, options| context.user_can? :move } )
 
-  self.add_show_tools_partial( :publish, callback: :status_action, modal: false, partial: 'formless_document_action', if: Proc.new { |context, config, options| context.user_can? :publish } )
+  add_show_tools_partial( :publish, callback: :status_action, modal: false, partial: 'formless_document_action', if: Proc.new { |context, config, options| context.user_can? :publish } )
 
-  self.add_show_tools_partial( :unpublish, callback: :status_action, modal: false, partial: 'formless_document_action', if: Proc.new { |context, config, options| context.user_can? :unpublish } )
+  add_show_tools_partial( :unpublish, callback: :status_action, modal: false, partial: 'formless_document_action', if: Proc.new { |context, config, options| context.user_can? :unpublish } )
 
-  self.add_show_tools_partial( :delete, callback: :delete_action, if: Proc.new { |context, config, options| context.user_can? :delete } )
+  add_show_tools_partial( :delete, callback: :delete_action, if: Proc.new { |context, config, options| context.user_can? :delete } )
 
-  self.add_show_tools_partial( :add_to_playlist, callback: :add_to_playlist_action )
+  add_show_tools_partial( :add_to_playlist, callback: :add_to_playlist_action )
 
-  before_filter :verify_permissions, only: :index
+  add_show_tools_partial( :intercom_push, callback: :intercom_push_action, if: Proc.new { |context, config, options| context.user_can? :intercom_push } )
+
+  add_show_tools_partial( :merge, callback: :merge_action, if: Proc.new { |context, config, options| context.user_can? :merge } )
+
+  before_action :verify_permissions, only: :index
 
   #HACK next two methods are a hack for problems in the puppet VM tomcat/solr
   # def rewrite_bookmarks_search(solr_parameters, user_parameters)
@@ -62,15 +66,18 @@ class BookmarksController < CatalogController
 
   def verify_permissions
     @response, @documents = action_documents
-    @valid_user_actions = [:delete, :unpublish, :publish, :move, :update_access_control, :add_to_playlist]
+    @valid_user_actions = [:delete, :unpublish, :publish, :merge, :move, :update_access_control, :add_to_playlist]
+    @valid_user_actions += [:intercom_push] if Settings.intercom.present?
     mos = @documents.collect { |doc| MediaObject.find( doc.id ) }
     @documents.each do |doc|
       mo = MediaObject.find(doc.id)
       @valid_user_actions.delete :delete if @valid_user_actions.include? :delete and cannot? :destroy, mo
       @valid_user_actions.delete :unpublish if @valid_user_actions.include? :unpublish and cannot? :unpublish, mo
       @valid_user_actions.delete :publish if @valid_user_actions.include? :publish and cannot? :update, mo
+      @valid_user_actions.delete :merge if @valid_user_actions.include? :merge and cannot? :update, mo
       @valid_user_actions.delete :move if @valid_user_actions.include? :move and cannot? :update, mo
       @valid_user_actions.delete :update_access_control if @valid_user_actions.include? :update_access_control and cannot? :update_access_control, mo
+      @valid_user_actions.delete :intercom_push if @valid_user_actions.include? :intercom_push and cannot? :intercom_push, mo
     end
   end
 
@@ -106,6 +113,7 @@ class BookmarksController < CatalogController
   end
 
   def access_control_action documents
+    params.permit! # FIXME: lock this down eventually
     errors = []
     success_ids = []
     Array(documents.map(&:id)).each do |id|
@@ -120,7 +128,7 @@ class BookmarksController < CatalogController
     flash[:alert] = "#{t('blacklight.update_access_control.alert', count: errors.count)}</br> #{ errors.join('<br/> ') }".html_safe if errors.count > 0
 
     params[:hidden] = params[:hidden] == "true" if params[:hidden].present?
-    BulkActionJobs::AccessControl.perform_later success_ids, params
+    BulkActionJobs::AccessControl.perform_later success_ids, params.to_h
   end
 
   def add_to_playlist_action documents
@@ -157,7 +165,7 @@ class BookmarksController < CatalogController
     end
     flash[:success] = t("blacklight.status.success", count: success_ids.count, status: status) if success_ids.count > 0
     flash[:alert] = "#{t('blacklight.status.alert', count: errors.count, status: status)}</br> #{ errors.join('<br/> ') }".html_safe if errors.count > 0
-    BulkActionJobs::UpdateStatus.perform_later success_ids, current_user.user_key, params
+    BulkActionJobs::UpdateStatus.perform_later success_ids, current_user.user_key, params.permit('action').to_h
   end
 
   def delete_action documents
@@ -173,7 +181,7 @@ class BookmarksController < CatalogController
     end
     flash[:success] = t("blacklight.delete.success", count: success_ids.count) if success_ids.count > 0
     flash[:alert] = "#{t('blacklight.delete.alert', count: errors.count)}</br> #{ errors.join('<br/> ') }".html_safe if errors.count > 0
-    BulkActionJobs::Delete.perform_later success_ids, params
+    BulkActionJobs::Delete.perform_later success_ids, nil
   end
 
   def move_action documents
@@ -193,7 +201,52 @@ class BookmarksController < CatalogController
       end
       flash[:success] = t("blacklight.move.success", count: success_ids.count, collection_name: collection.name) if success_ids.count > 0
       flash[:alert] = "#{t('blacklight.move.alert', count: errors.count)}</br> #{ errors.join('<br/> ') }".html_safe if errors.count > 0
-      BulkActionJobs::Move.perform_later success_ids, params
+      BulkActionJobs::Move.perform_later success_ids, params.permit(:target_collection_id).to_h
+    end
+  end
+
+  def intercom_push_action documents
+    errors = []
+    success_ids = []
+    intercom = Avalon::Intercom.new(current_user.user_key)
+    collections = intercom.user_collections(true)
+    session[:intercom_collections] = collections
+    if intercom.collection_valid?(params[:collection_id])
+      Array(documents.map(&:id)).each do |id|
+        media_object = MediaObject.find(id)
+        if cannot? :intercom_push, media_object
+          errors += ["#{media_object.title} (#{id}) #{t('blacklight.messages.permission_denied')}."]
+        else
+          success_ids << id
+        end
+      end
+      if success_ids.present?
+        session[:intercom_default_collection] = params[:collection_id]
+        BulkActionJobs::IntercomPush.perform_later success_ids, current_user.user_key, params.permit(:collection_id, :include_structure).to_h
+        flash[:success] = "Sucessfully started push of #{success_ids.count} media objects."
+      end
+      flash[:alert] = "Failed to push #{errors.count} media objects.</br> #{ errors.join('<br/> ') }".html_safe if errors.count > 0
+    else
+      flash[:alert] = "You do not have permission to push to this collection."
+    end
+  end
+
+  def merge_action documents
+    errors = []
+    target = MediaObject.find params[:media_object]
+    subject_ids = documents.collect(&:id)
+    subject_ids.delete(target.id)
+    subject_ids.map { |id| MediaObject.find id }.each do |media_object|
+      if cannot? :destroy, media_object
+        errors += ["#{media_object.title || id} #{t('blacklight.messages.permission_denied')}."]
+      end
+    end
+
+    if errors.present?
+      flash[:error] = "#{t('blacklight.merge.fail', count: errors.count)} #{errors.join('<br>')}".html_safe
+    else
+      BulkActionJobs::Merge.perform_later target.id, subject_ids.sort
+      flash[:success] = t("blacklight.merge.success", count: subject_ids.count, item_link: media_object_path(target), item_title: target.title || target.id).html_safe
     end
   end
 end

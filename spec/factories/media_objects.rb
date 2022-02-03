@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -12,14 +12,14 @@
 #   specific language governing permissions and limitations under the License.
 # ---  END LICENSE_HEADER BLOCK  ---
 
-FactoryGirl.define do
+FactoryBot.define do
   factory :media_object do
     title { Faker::Lorem.sentence }
-    creator { [FactoryGirl.create(:user).user_key] }
+    creator { [FactoryBot.create(:user).user_key] }
     date_issued { Time.zone.today.edtf.to_s }
 
     # trait :with_collection do
-      collection { FactoryGirl.create(:collection) }
+      collection { FactoryBot.create(:collection) }
       governing_policies { [collection] }
     # end
 
@@ -40,9 +40,13 @@ FactoryGirl.define do
         geographic_subject { [Faker::Address.country] }
         physical_description { [Faker::Lorem.word] }
         table_of_contents { [Faker::Lorem.paragraph] }
-        note { [{note: Faker::Lorem.paragraph, type: 'general'}] }
-        other_identifier { [{id: Faker::Lorem.word, source: ['local']}] }
+        note { [{ note: Faker::Lorem.paragraph, type: 'general' }] }
+        other_identifier { [{ id: Faker::Lorem.word, source: 'local' }] }
         language { ['eng'] }
+        related_item_url { [{ url: Faker::Internet.url, label: Faker::Lorem.sentence }]}
+        bibliographic_id { { id: Faker::Lorem.word, source: 'local' } }
+        comment { ['MO comment'] }
+        rights_statement { ['http://rightsstatements.org/vocab/InC-EDU/1.0/'] }
         # after(:create) do |mo|
         #   mo.update_datastream(:descMetadata, {
         #     note: {note[Faker::Lorem.paragraph],
@@ -57,7 +61,7 @@ FactoryGirl.define do
     end
     trait :with_master_file do
       after(:create) do |mo|
-        mf = FactoryGirl.create(:master_file)
+        mf = FactoryBot.create(:master_file)
         mf.media_object = mo
         mf.save
         # mo.ordered_master_files += [mf]

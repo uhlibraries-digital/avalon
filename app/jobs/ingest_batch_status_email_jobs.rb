@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -18,30 +18,46 @@ module IngestBatchStatusEmailJobs
   # Sends an email to the user to alert them to this fact
   class IngestFinished < ActiveJob::Base
     queue_as :ingest_finished_job
+    unique :until_executed, on_conflict: :log
+
     def perform
       # Get all unlocked items that don't have an email sent for them and see if an email can be sent
       BatchRegistries.where(completed_email_sent: false, error_email_sent: false, locked: false).each do |br|
         # Get the entries for the batch and see if they all complete
         complete = true
         errors = false
-        BatchEntries.where(batch_registries_id: br.id).each do |entry|
+        br.batch_entries.each do |entry|
           complete = false unless entry.complete || entry.error
           errors = true if entry.error
         end
 
         next unless complete
-        unless errors
-          BatchRegistriesMailer.batch_registration_finished_mailer(br).deliver_now
+
+        BatchRegistriesMailer.batch_registration_finished_mailer(br).deliver_now
+        if errors
+          br.error_email_sent = true
+          br.error = true
+        else
           br.completed_email_sent = true
           br.complete = true
         end
-        if errors
-          BatchRegistriesMailer.batch_registration_finished_mailer(br).deliver_now
-          br.error_email_sent = true
-          br.error = true
-        end
         br.save
       end
+
+      # Done encoding? (either successfully or with error)
+      BatchRegistries.where(processed_email_sent: false,
+                            error: false,
+                            complete: true).each do |br|
+        if br.encoding_finished?
+          BatchRegistriesMailer.batch_encoding_finished(br).deliver_now
+          br.processed_email_sent = true
+          if br.encoding_error?
+            br.error = true
+          end
+          br.save
+        end
+      end
+
     end
   end
 

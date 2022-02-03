@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -70,9 +70,9 @@ class AvalonAnnotation < ActiveAnnotations::Annotation
   # Calcuates the mediafragment_uri based on either the internal fragment value or start and end times
   # @return [String] the uri with time bounding
   def mediafragment_uri
-    master_file.rdf_uri + "?#{internal.fragment_value.object}"
+    "#{master_file&.rdf_uri}?#{internal.fragment_value.object}"
   rescue
-    master_file.rdf_uri + "?t=#{start_time},#{end_time}"
+    "#{master_file&.rdf_uri}?t=#{start_time},#{end_time}"
   end
 
 end

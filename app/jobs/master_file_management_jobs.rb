@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -22,7 +22,7 @@ module MasterFileManagementJobs
       source_object = FileLocator::S3File.new(source.source).object
       dest_object = FileLocator::S3File.new(dest.source).object
       if dest_object.copy_from(source_object, multipart_copy: source_object.size > 15.megabytes)
-        source_object.delete
+        source_object.delete if FileLocator.new(dest.source).exists?
       end
     end
 
@@ -42,8 +42,8 @@ module MasterFileManagementJobs
     end
 
     def file_to_file(source, dest)
-    	FileUtils.mkdir_p File.dirname(dest.uri.path) unless File.exist? File.dirname(dest.uri.path)
-    	FileUtils.mv source.uri.path, dest.uri.path
+    	FileUtils.mkdir_p File.dirname(dest.location) unless File.exist? File.dirname(dest.location)
+    	FileUtils.mv source.location, dest.location
     end
 
     def perform(id, newpath)
@@ -52,7 +52,10 @@ module MasterFileManagementJobs
       masterfile = MasterFile.find(id)
       oldpath = masterfile.file_location
       old_locator = FileLocator.new(oldpath)
-      if old_locator.exists?
+
+      if newpath == oldpath
+        Rails.logger.info "Masterfile #{newpath} already moved"
+      elsif old_locator.exists?
         new_locator = FileLocator.new(newpath)
         copy_method = "#{old_locator.uri.scheme}_to_#{new_locator.uri.scheme}".to_sym
         send(copy_method, old_locator, new_locator)

@@ -29,6 +29,8 @@ class MEJSPlayer {
     this.mejsUtility = new MEJSUtility();
     this.mejsTimeRailHelper = new MEJSTimeRailHelper();
     this.mejsMarkersHelper = new MEJSMarkersHelper();
+    this.mejsQualityHelper = new MEJSQualityHelper();
+    this.localStorage = window.localStorage;
 
     // Unpack player configuration object for the new player.
     // This allows for variable params to be sent in.
@@ -36,6 +38,7 @@ class MEJSPlayer {
     this.features = configObj.features || {};
     this.highlightRail = configObj.highlightRail;
     this.playlistItem = configObj.playlistItem || {};
+    this.defaultQuality = configObj.defaultQuality || 'auto';
 
     // Tracks whether we're loading the page or just reloading player
     this.isFirstLoad = true;
@@ -44,6 +47,8 @@ class MEJSPlayer {
     this.mediaElement = null;
     // Actual MediaElement instance
     this.player = null;
+
+    this.node = null;
     // Add click listeners
     this.addSectionsClickListener();
     // audio or video file?
@@ -57,6 +62,16 @@ class MEJSPlayer {
       data: {},
       paused: false
     };
+
+    // Initialize switchPlayerHelper for mediafragment, if one exists
+    if (this.currentStreamInfo.t && this.currentStreamInfo.t[0] > 0) {
+      this.switchPlayerHelper.active = true;
+      this.switchPlayerHelper.data = {
+        fragmentbegin: this.currentStreamInfo.t[0],
+        fragmentend: this.currentStreamInfo.t[1]
+      };
+      this.switchPlayerHelper.paused = true;
+    }
 
     // Array of all current segments for media object
     this.segmentsMap = this.mejsUtility.createSegmentsMap(
@@ -114,25 +129,32 @@ class MEJSPlayer {
   }
 
   /**
-   * Make AJAX request for clicked item's stream data
+   * Make AJAX request for clicked/next available items's stream data
    * @function getNewStreamAjax
-   * @param  {string} id - id of master file id
    * @param {string} url Url to get stream data ie. /media_objects/xg94hp52v/section/bc386j20b
+   * @param {boolean} startPlaying once advancing to next item, continue playing after the player is re-initialized
    * @param {Array} playlistItemT Array which contains playlist item clip start and end times.  This is sent in from playlist items plugin, when creating a new instance of the player.
    * @return {void}
    */
-  getNewStreamAjax(id, url, playlistItemsT) {
+  getNewStreamAjax(url, startPlaying, playlistItemsT) {
+    $('.media-show-page').removeClass('ready-to-play');
     $.ajax({
       url: url + '/stream',
-      dataType: 'json',
-      data: {
-        content: id
-      }
+      dataType: 'json'
     })
       .done(response => {
-        this.removePlayer();
-        this.setContextVars(response, playlistItemsT);
-        this.createNewPlayer();
+        // Use the existing player iff existing player and new stream are both of type video and
+        // previous item has come to its end
+        if(startPlaying && response.is_video && this.player.isVideo) {
+          // Set currentStreamInfo before switching the player: switchPlayer uses new stream info
+          this.setContextVars(response, playlistItemsT);
+          this.switchPlayer(playlistItemsT);
+        } else {
+          // Set currentStreamInfo after removing the player: removePlayer uses existing stream info
+          this.removePlayer();
+          this.setContextVars(response, playlistItemsT);
+          this.createNewPlayer();
+        }
         this.updateShareLinks();
       })
       .fail(error => {
@@ -149,9 +171,31 @@ class MEJSPlayer {
   handleCanPlay() {
     this.mediaElement.removeEventListener('canplay');
     // Do we play a specified range of the media file?
+    $('.media-show-page').addClass('ready-to-play');
     if (this.switchPlayerHelper.active) {
       this.playRange();
     }
+  }
+
+  /**
+   * Event handler for MediaElement's 'volumechange' event
+   * Save new volume to localStorage for initializing new players with that vol
+   * @function handleVolumeChange
+   * @return {void}
+   */
+  handleVolumeChange() {
+    this.localStorage.setItem('startVolume', this.mediaElement.volume)
+  }
+
+  /**
+   * Event handler for MediaElement's 'captionschange' event
+   * Save new volume to localStorage for initializing new players with that vol
+   * @function handleCaptionsChange
+   * @return {void}
+   */
+  handleCaptionsChange() {
+    let srclang = currentPlayer.selectedTrack === null ? '' : currentPlayer.selectedTrack.srclang;
+    this.localStorage.setItem('captions', srclang)
   }
 
   /**
@@ -169,7 +213,7 @@ class MEJSPlayer {
 
     const $sections = $('#accordion').find('.panel-heading[data-section-id]');
     const sectionsIdArray = $sections.map((index, item) =>
-      $(item).data('sectionId')
+      $(item).data('sectionId').toString()
     );
     const currentIdIndex = [...sectionsIdArray].indexOf(t.currentStreamInfo.id);
 
@@ -181,17 +225,105 @@ class MEJSPlayer {
         .data('mediaObjectId');
 
       // Update helper object noting we want the new media clip to auto start
-      this.switchPlayerHelper = {
+      t.switchPlayerHelper = {
         active: true,
         data: {},
         paused: false
       };
 
-      // Go to next section
-      this.getNewStreamAjax(
-        sectionId,
-        `/media_objects/${mediaObjectId}/section/${sectionId}`
+       // Go to next section
+       t.getNewStreamAjax(
+        `/media_objects/${mediaObjectId}/section/${sectionId}`,
+        true
       );
+    }
+  }
+
+  /**
+   * Swap the media source and track in the current player instance with values from
+   * the new stream info
+   * @function switchPlayer
+   * @param {Object} playlistItemsT
+   * @returns {void}
+   */
+  switchPlayer(playlistItemsT) {
+    let markup = '';
+
+    this.node.innerHTML = '';
+    this.currentStreamInfo.stream_hls.map(source => {
+      markup += `<source src="${
+        source.url
+      }" type="application/x-mpegURL" data-quality="${source.quality}"/>`;
+    });
+
+    if (this.currentStreamInfo.captions_path) {
+      markup += `<track srclang="en" kind="subtitles" type="${
+        this.currentStreamInfo.captions_format
+      }" src="${this.currentStreamInfo.captions_path}"></track>`;
+    }
+
+    this.node.innerHTML = markup;
+
+    // Bind to canplay event to switch off loading when media is ready
+    this.mediaElement.addEventListener(
+      'canplay',
+      this.handleCanPlay.bind(this)
+    );
+
+    // Build playlists button from the new stream when not in playlists
+    if(!playlistItemsT) {
+      this.player.options.playlistItemDefaultTitle = this.currentStreamInfo.embed_title;
+      this.player.buildaddToPlaylist(this.player, null, null, null);
+    }
+
+    // Initialize playlist items for the new stream
+    if(playlistItemsT) {
+      this.player.buildplaylistItems(this.player, null, null, this.mediaElement);
+    }
+
+    // Set defaultQuality in player options before building the quality feature
+    this.player.options.defaultQuality = this.localStorage.getItem('quality');
+
+    // Build quality
+    this.player.buildquality(this.player, null, null, this.mediaElement);
+
+    // Set startVolume in options from the current mediaelement instance
+    this.player.options.startVolume = this.mediaElement.volume;
+
+    this.reInitializeCaptions();
+
+    this.player.load();
+    this.player.play();
+  }
+
+  /** Based on the availability of captions in currentStreamInfo build tracks
+   * in playlists and item page
+   * @function reInitializeCaptions
+   */
+  reInitializeCaptions() {
+    if (this.currentStreamInfo.captions_path) {
+      // Place tracks button after volume button when tracks are available
+      this.player.featurePosition.tracks = this.player.featurePosition.volume + 1;
+      this.player.buildtracks(this.player, null, this.player.layers, this.mediaElement);
+      // Turn on captions
+      this.toggleCaptions();
+    } else {
+      // Clear captions object
+      delete this.player.tracks;
+      this.player.cleartracks(this.player);
+    }
+  }
+
+  /**
+   * Toggle captions on if toggleable and previously on
+   * @function toggleCaptions
+   * @returns {void}
+   */
+  toggleCaptions() {
+    if (this.mediaType==="video" && this.player.options.toggleCaptionsButtonWhenOnlyOne) {
+      if (this.localStorage.getItem('captions') !== '' && this.player.tracks && this.player.tracks.length===1) {
+        this.player.setTrack(this.player.tracks[0].trackId, (typeof keyboard !== 'undefined'));
+      }
     }
   }
 
@@ -213,7 +345,6 @@ class MEJSPlayer {
 
     // Clicked on a different section
     if (dataset.segment !== this.currentStreamInfo.id) {
-      let id = target.dataset.segment;
       let url = target.dataset.nativeUrl.split('?')[0];
 
       // Capture clicked segment or section element id
@@ -222,7 +353,7 @@ class MEJSPlayer {
         data: dataset,
         paused: this.mediaElement.paused
       };
-      this.getNewStreamAjax(id, url);
+      this.getNewStreamAjax(url, false);
     } else {
       // Clicked within the same section...
       const parentPanel = $(target).closest('div[class*=panel]');
@@ -234,7 +365,7 @@ class MEJSPlayer {
         : parseFloat(this.segmentsMap[target.id].fragmentbegin);
       this.mediaElement.setCurrentTime(time);
     }
-    
+
     this.mejsUtility.showControlsBriefly(this.player);
   }
 
@@ -270,7 +401,17 @@ class MEJSPlayer {
       this.mejsUtility.highlightSectionLink();
     }
   }
-
+  /**
+   * MediaElement render error callback function
+   * @function handleError
+   * @param  {Object} error - The error object
+   * @param  {Object} mediaElement - The wrapper that mimics all the native events/properties/methods for all renderers
+   * @param  {Object} originalNode - The original HTML video, audio or iframe tag where the media was loaded originally
+   * @return {void}
+   */
+  handleError(error, mediaElement, originalNode) {
+    console.log('MEJS CREATE ERROR: ' + error);
+  }
   /**
    * MediaElement render success callback function
    * @function handleSuccess
@@ -282,13 +423,23 @@ class MEJSPlayer {
   handleSuccess(mediaElement, originalNode, instance) {
     this.mediaElement = mediaElement;
 
-    // Make the player visible
-    this.revealPlayer(instance);
-
     // Grab instance of player
     if (!this.player) {
-      this.player = this.mediaElement;
+      this.player = instance;
     }
+
+    this.node = originalNode;
+
+    if (this.player && this.player.media && this.player.media.hlsPlayer && this.player.media.hlsPlayer.config) {
+      // Workaround for hlsError bufferFullError: Set max buffer length to 2 minutes
+      this.player.media.hlsPlayer.config.maxMaxBufferLength = 120;
+    }
+
+    // Toggle captions
+    this.toggleCaptions();
+
+    // Make the player visible
+    this.revealPlayer(instance);
 
     this.emitSuccessEvent();
 
@@ -298,8 +449,22 @@ class MEJSPlayer {
       this.handleCanPlay.bind(this)
     );
 
+    // Handle 'volumechange' events fired by player
+    this.mediaElement.addEventListener(
+      'volumechange',
+      this.handleVolumeChange.bind(this)
+    );
+
+    // Handle 'captionschange' events fired by player
+    this.mediaElement.addEventListener(
+      'captionschange',
+      this.handleCaptionsChange.bind(this)
+    );
+
     // Handle 'ended' event fired by player
-    this.mediaElement.addEventListener('ended', this.handleEnded.bind(this));
+    this.mediaElement.addEventListener('ended',
+      this.handleEnded.bind(this)
+    );
 
     // Show highlighted time in time rail
     if (this.highlightRail) {
@@ -416,21 +581,61 @@ class MEJSPlayer {
    */
   initializePlayer() {
     let currentStreamInfo = this.currentStreamInfo;
+    // Set default quality value in localStorage  
+    this.localStorage.setItem('quality', this.defaultQuality);
+    // Interval in seconds to jump forward and backward in media
+    let jumpInterval = 5;
+
+    // Set default quality value in localStorage  
+    this.localStorage.setItem('quality', this.defaultQuality);
+
     // Mediaelement default root level configuration
     let defaults = {
       pluginPath: '/assets/mediaelement/shims/',
       features: this.features,
       poster: currentStreamInfo.poster_image || null,
       success: this.handleSuccess.bind(this),
+      error: this.handleError.bind(this),
       embed_title: currentStreamInfo.embed_title,
       link_back_url: currentStreamInfo.link_back_url,
       qualityText: 'Stream Quality',
-      toggleCaptionsButtonWhenOnlyOne: true
+      defaultQuality: this.defaultQuality,
+      toggleCaptionsButtonWhenOnlyOne: true,
+      startVolume: this.localStorage.getItem('startVolume') || 1.0,
+      startLanguage: this.localStorage.getItem('captions') || '',
+      // jump forward and backward when player is not focused
+      defaultSeekBackwardInterval: function() { return jumpInterval },
+      defaultSeekForwardInterval: function() { return jumpInterval }
     };
+
+    // Add root level config for Android devices
+    if(mejs.Features.isAndroid) {
+      defaults.duration = currentStreamInfo.duration
+      // Make use of native HLS for hls.js
+      defaults.renderers = ['native_hls']
+    }
+
+    if (this.currentStreamInfo.cookie_auth) {
+      defaults.hls = {
+        xhrSetup: (xhr, url) => {
+          xhr.withCredentials = true;
+        }
+      };
+    }
+
     let promises = [];
     const playlistIds = this.playlistItem
       ? [this.playlistItem.playlist_id, this.playlistItem.id]
       : [];
+
+    // Remove quality feature for IE and Android
+    if (
+      mejs.Features.isAndroid ||
+      !!navigator.userAgent.match(/MSIE /) ||
+      !!navigator.userAgent.match(/Trident.*rv\:11\./)
+    ) {
+      defaults.features = defaults.features.filter(e => e !== 'quality');
+    }
 
     // Remove video player controls/plugins if it's not a video stream
     if (!currentStreamInfo.is_video) {

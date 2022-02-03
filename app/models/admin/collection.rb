@@ -1,4 +1,4 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -28,6 +28,8 @@ class Admin::Collection < ActiveFedora::Base
   validates :name, :uniqueness => { :solr_name => 'name_uniq_si'}, presence: true
   validates :unit, presence: true, inclusion: { in: Proc.new{ Admin::Collection.units } }
   validates :managers, length: {minimum: 1, message: "list can't be empty."}
+  validates :contact_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
+  validates :website_url, format: { with: URI.regexp }, allow_blank: true
 
   property :name, predicate: ::RDF::Vocab::DC.title, multiple: false do |index|
     index.as :stored_sortable
@@ -37,6 +39,15 @@ class Admin::Collection < ActiveFedora::Base
   end
   property :description, predicate: ::RDF::Vocab::DC.description, multiple: false do |index|
     index.as :stored_searchable
+  end
+  property :contact_email, predicate: ::RDF::Vocab::SCHEMA.email, multiple: false do |index|
+    index.as :stored_sortable
+  end
+  property :website_label, predicate: Avalon::RDFVocab::Collection.website_label, multiple: false do |index|
+    index.as :stored_sortable
+  end
+  property :website_url, predicate: ::RDF::Vocab::SCHEMA.url, multiple: false do |index|
+    index.as :stored_sortable
   end
   property :dropbox_directory_name, predicate: Avalon::RDFVocab::Collection.dropbox_directory_name, multiple: false do |index|
     index.as :stored_sortable
@@ -48,17 +59,21 @@ class Admin::Collection < ActiveFedora::Base
     index.as :symbol
   end
   property :default_hidden, predicate: Avalon::RDFVocab::Collection.default_hidden, multiple: false do |index|
-    index.as Solrizer::Descriptor.new(:boolean, :stored, :indexed)
+    index.as ActiveFedora::Indexing::Descriptor.new(:boolean, :stored, :indexed)
   end
   property :identifier, predicate: ::RDF::Vocab::Identifiers.local, multiple: true do |index|
     index.as :symbol
   end
 
+  has_subresource 'poster', class_name: 'IndexedFile'
+
   around_save :reindex_members, if: Proc.new{ |c| c.name_changed? or c.unit_changed? }
   before_create :create_dropbox_directory!
 
+  before_destroy :destroy_dropbox_directory!
+
   def self.units
-    Avalon::ControlledVocabulary.find_by_name(:units) || []
+    Avalon::ControlledVocabulary.find_by_name(:units, sort: true) || []
   end
 
   def created_at
@@ -160,6 +175,7 @@ class Admin::Collection < ActiveFedora::Base
   def to_solr
     super.tap do |solr_doc|
       solr_doc["name_uniq_si"] = self.name.downcase.gsub(/\s+/,'') if self.name.present?
+      solr_doc["has_poster_bsi"] = !(poster.content.nil? || poster.content == '')
     end
   end
 
@@ -194,6 +210,16 @@ class Admin::Collection < ActiveFedora::Base
     File.join(Settings.dropbox.path, name || dropbox_directory_name)
   end
 
+  def dropbox_object_count
+    if Settings.dropbox.path =~ %r(^s3://)
+      dropbox_path = URI.parse(dropbox_absolute_path)
+      response = Aws::S3::Client.new.list_objects(bucket: Settings.encoding.masterfile_bucket, max_keys: 10, prefix: "#{dropbox_path.path}/")
+      response.contents.size
+    else
+      Dir["#{dropbox_absolute_path}/*"].count
+    end
+  end
+
   def media_objects_to_json
     media_objects.collect{|mo| [mo.id, mo.to_json] }.to_h
   end
@@ -207,7 +233,7 @@ class Admin::Collection < ActiveFedora::Base
   end
 
   def default_virtual_read_groups
-    self.default_read_groups.to_a - ["public", "registered"] - default_local_read_groups - default_ip_read_groups
+    self.default_read_groups.to_a - represented_default_visibility - default_local_read_groups - default_ip_read_groups
   end
 
   def default_visibility=(value)
@@ -257,6 +283,10 @@ class Admin::Collection < ActiveFedora::Base
       end
     end
 
+    def destroy_dropbox_directory!
+      DeleteDropboxJob.perform_later(dropbox_absolute_path)
+    end
+
     def calculate_dropbox_directory_name
       name = self.dropbox_directory_name
 
@@ -290,10 +320,9 @@ class Admin::Collection < ActiveFedora::Base
       end
 
       absolute_path = dropbox_absolute_path(name)
-
       unless File.directory?(absolute_path)
         begin
-          Dir.mkdir(absolute_path)
+          FileUtils.mkdir_p absolute_path
         rescue Exception => e
           Rails.logger.error "Could not create directory (#{absolute_path}): #{e.inspect}"
         end

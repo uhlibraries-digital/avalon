@@ -1,3 +1,5 @@
+require 'string_additions'
+require 'avalon/errors'
 # Loads configuration information from the YAML file and then sets up the
 # dropbox
 #
@@ -5,5 +7,6 @@
 # out what is available. See lib/avalon/dropbox.rb for details on the API
 require 'avalon/dropbox'
 require 'avalon/batch'
+require 'string_additions'
 
 I18n.config.enforce_available_locales = true

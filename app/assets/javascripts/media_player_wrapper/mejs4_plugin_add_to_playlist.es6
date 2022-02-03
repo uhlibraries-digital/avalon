@@ -51,6 +51,8 @@ Object.assign(MediaElementPlayer.prototype, {
 
     addToPlayListObj.isVideo = player.isVideo;
 
+    player.cleanaddToPlaylist(player);
+
     // Create plugin control button for player
     player.addPlaylistButton = document.createElement('div');
     player.addPlaylistButton.className =
@@ -60,7 +62,21 @@ Object.assign(MediaElementPlayer.prototype, {
       'add-to-playlist-button';
     player.addPlaylistButton.innerHTML = `<button type="button" aria-controls="${
       t.id
-    }" title="${addTitle}" aria-label="${addTitle}" tabindex="0">${addTitle}</button>`;
+    }" title="${addTitle}" aria-label="${addTitle}" tabindex="0" style="opacity: 0.5; cursor: not-allowed;" disabled>${addTitle}</button>`;
+
+    let playlistBtn = player.addPlaylistButton.childNodes[0];
+
+    let enableBtn = () => {
+      if(player.duration > 0) {
+        playlistBtn.style.opacity = 1;
+        playlistBtn.style.cursor = 'pointer';
+        playlistBtn.disabled = false;
+        clearInterval(timeCheck);
+      }
+    }
+
+    // Enable add to playlist  button after derivative is loaded
+    let timeCheck = setInterval(enableBtn, 500);
 
     // Add control button to player
     t.addControlElement(player.addPlaylistButton, 'addToPlaylist');
@@ -110,14 +126,21 @@ Object.assign(MediaElementPlayer.prototype, {
     addToPlayListObj.resetForm.apply(addToPlayListObj);
 
     // Remove Add / Cancel button event listeners
-    addToPlayListObj.addButton.removeEventListener(
-      'click',
-      addToPlayListObj.bindHandleAdd
-    );
-    addToPlayListObj.cancelButton.removeEventListener(
-      'click',
-      addToPlayListObj.bindHandleCancel
-    );
+    if (addToPlayListObj.addButton !== null) {
+      addToPlayListObj.addButton.removeEventListener(
+        'click',
+        addToPlayListObj.bindHandleAdd
+      );
+    }
+    if (addToPlayListObj.cancelButton !== null) {
+      addToPlayListObj.cancelButton.removeEventListener(
+        'click',
+        addToPlayListObj.bindHandleCancel
+      );
+    }
+    if (player && player.addPlaylistButton) {
+      player.addPlaylistButton.remove();
+    }
   },
 
   // Other optional public methods (all documented according to JSDoc specifications)
@@ -201,6 +224,25 @@ Object.assign(MediaElementPlayer.prototype, {
       }
 
       return defaultTitle;
+    },
+
+    /**
+     * Checks whether the form elements which make up the Add To Playlist form are
+     * present in the DOM.  If no playlists have been created, the values will be 'null'.
+     * If playlists have been created, then the values will be DOM element references.
+     * @function formHasDefinedInputs
+     * @return {Boolean} Does the Add to Playlist form have DOM element inputs?
+     */
+    formHasDefinedInputs: function() {
+      let hasInputs = true;
+      const formInputs = this.formInputs;
+
+      for (let prop in formInputs) {
+        if (!formInputs[prop]) {
+          hasInputs = false;
+        }
+      }
+      return hasInputs;
     },
 
     /**
@@ -307,12 +349,14 @@ Object.assign(MediaElementPlayer.prototype, {
       $(t.addToPlayListObj.playlistEl).slideToggle();
       // Update active (is showing) state
       t.addToPlayListObj.active = !t.addToPlayListObj.active;
+      // Disable ME.js keyboard shortcuts when form is open
+      addToPlayListObj.player.options.enableKeyboard = false;
     },
 
     /**
      * Handle click events on the Sections and structural metadata links.
      * @function handleSectionLinkClick
-     * @param  {MouseEvent} e [description]
+     * @param  {MouseEvent} e
      * @return {void}
      */
     handleSectionLinkClick: function(e) {
@@ -323,7 +367,7 @@ Object.assign(MediaElementPlayer.prototype, {
         // because if it's a different player type (ie. say audio, then the form
         // will be reset automatically)
         const incomingIsVideo = e.target.dataset['isVideo'] === 'true';
-        if (incomingIsVideo === addToPlayListObj.isVideo) {
+        if (addToPlayListObj.formHasDefinedInputs() && incomingIsVideo === addToPlayListObj.isVideo) {
           addToPlayListObj.populateFormValues.apply(this);
         }
       }
@@ -336,6 +380,7 @@ Object.assign(MediaElementPlayer.prototype, {
      */
     populateFormValues: function() {
       const t = this;
+      let startTime = '';
       let endTime = '';
       let player = t.addToPlayListObj.player;
       let formInputs = t.addToPlayListObj.formInputs;
@@ -344,10 +389,8 @@ Object.assign(MediaElementPlayer.prototype, {
         t
       );
       formInputs.description.value = '';
-      formInputs.start.value = mejs.Utils.secondsToTimeCode(
-        player.getCurrentTime(),
-        true
-      );
+      startTime = player.getCurrentTime();
+      formInputs.start.value = mejs.Utils.secondsToTimeCode(startTime, true, false, 25, 3);
 
       // Calculate end value
       if (
@@ -358,7 +401,7 @@ Object.assign(MediaElementPlayer.prototype, {
       } else {
         endTime = player.media.duration;
       }
-      formInputs.end.value = mejs.Utils.secondsToTimeCode(endTime, true);
+      formInputs.end.value = mejs.Utils.secondsToTimeCode(endTime, true, false, 25, 3);
     },
 
     /**
@@ -371,11 +414,13 @@ Object.assign(MediaElementPlayer.prototype, {
       let formInputs = t.formInputs;
 
       for (let prop in formInputs) {
-        if (prop !== 'playlist') {
+        if (formInputs[prop] !== null && prop !== 'playlist') {
           formInputs[prop].value = '';
         }
       }
       t.active = false;
+      // Enable ME.js keyboard shortcuts when the form closes
+      t.player.options.enableKeyboard = true;
     }
   }
 });

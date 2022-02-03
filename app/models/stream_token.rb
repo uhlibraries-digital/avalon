@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -30,6 +30,7 @@ class StreamToken < ActiveRecord::Base
     result = find_or_create_by!(token: hash_token.to_s, target: target)
     result.renew!
     session[:hash_tokens] << result.token
+    session[:hash_tokens].uniq! # Avoid duplicate entry
     result.token
   end
 
@@ -54,6 +55,12 @@ class StreamToken < ActiveRecord::Base
     else
       raise Unauthorized, 'Unauthorized'
     end
+  end
+
+  def self.valid_token?(value, master_file_id)
+    return false if value.nil?
+    token = find_by_token(value)
+    token.present? && token.expires > Time.now.utc && token.target == master_file_id
   end
 
   def renew!

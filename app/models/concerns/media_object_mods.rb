@@ -1,11 +1,11 @@
-# Copyright 2011-2018, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software distributed
 #   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -170,7 +170,7 @@ module MediaObjectMods
 
   # has_attributes :note, datastream: :descMetadata, at: [:note], multiple: true
   def note
-    descMetadata.note.present? ? descMetadata.note.zip(descMetadata.note.type).map{|a|{note: a[0],type: a[1]}} : nil
+    descMetadata.note.present? ? descMetadata.note.zip(descMetadata.note.type).map{|a|{note: a[0],type: a[1]}} : []
   end
 
   def note_values
@@ -311,11 +311,20 @@ module MediaObjectMods
 
   # has_attributes :terms_of_use, datastream: :descMetadata, at: [:terms_of_use], multiple: false
   def terms_of_use
-    descMetadata.terms_of_use.first
+    (descMetadata.terms_of_use - descMetadata.rights_statement).first
   end
   def terms_of_use=(value)
-    delete_all_values(:terms_of_use)
-    descMetadata.add_terms_of_use(value) if value.present?
+    # delete_all_values(:terms_of_use)
+    (descMetadata.find_by_terms(:terms_of_use) - descMetadata.find_by_terms(:rights_statement)).each &:remove
+    descMetadata.add_terms_of_use(Array(value).first) if value.present?
+  end
+
+  def rights_statement
+    descMetadata.rights_statement.first
+  end
+  def rights_statement=(value)
+    delete_all_values(:rights_statement)
+    descMetadata.add_rights_statement(Array(value).first) if value.present?
   end
 
   # has_attributes :table_of_contents, datastream: :descMetadata, at: [:table_of_contents], multiple: true
@@ -338,7 +347,7 @@ module MediaObjectMods
 
   # has_attributes :related_item_url, datastream: :descMetadata, at: [:related_item_url], multiple: true
   def related_item_url
-    descMetadata.related_item_url.zip(descMetadata.related_item_label).map{|a|{url: a[0],label: a[1]}}
+    descMetadata.related_item_url.zip(descMetadata.related_item_label).map{|a|{url: a[0].strip, label: a[1]}}
   end
 
   def related_item_url=(value_hashes)
@@ -349,7 +358,7 @@ module MediaObjectMods
 
   # has_attributes :other_identifier, datastream: :descMetadata, at: [:other_identifier], multiple: true
   def other_identifier
-    descMetadata.other_identifier.present? ? descMetadata.other_identifier.zip(descMetadata.other_identifier.type).map{|a|{id: a[0], source: a[1]}} : nil
+    descMetadata.other_identifier.present? ? descMetadata.other_identifier.zip(descMetadata.other_identifier.type).map{|a|{id: a[0], source: a[1]}} : []
   end
   def other_identifier=(value_hashes)
     delete_all_values(:other_identifier)

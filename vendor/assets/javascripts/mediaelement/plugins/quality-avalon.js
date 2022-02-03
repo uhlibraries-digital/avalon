@@ -16,7 +16,7 @@
   function s(o, u) {
     if (!n[o]) {
       if (!t[o]) {
-        var a = typeof require == 'function' && require;
+        var a = typeof require === 'function' && require;
         if (!u && a) return a(o, !0);
         if (i) return i(o, !0);
         var f = new Error("Cannot find module '" + o + "'");
@@ -39,10 +39,10 @@
     }
     return n[o].exports;
   }
-  var i = typeof require == 'function' && require;
+  var i = typeof require === 'function' && require;
   for (var o = 0; o < r.length; o++) s(r[o]);
   return s;
-})(
+}(
   {
     1: [
       function(_dereq_, module, exports) {
@@ -92,16 +92,16 @@
                 value
               ) {
                 var label = void 0;
-                if (value === 'auto') {
-                  var keyExist = t.keyExist(qualityMap, value);
-                  if (keyExist) {
-                    label = value;
-                  } else {
-                    var keyValue = t.getMapIndex(qualityMap, 0);
-                    label = keyValue.key;
-                  }
-                } else {
+                var keyExist = t.keyExist(qualityMap, value);
+                if (keyExist) {
                   label = value;
+                } else if(t.keyExist(qualityMap, 'auto')) {
+                  // When default quality src is not present, but 'auto'
+                  // quality src is available
+                  label = 'auto';
+                } else {
+                  var keyValue = t.getMapIndex(qualityMap, 0);
+                  label = keyValue.key;
                 }
                 return label;
               },
@@ -128,7 +128,10 @@
                 t.options.classPrefix +
                 'qualities-selector ' +
                 t.options.classPrefix +
-                'offscreen">') +
+                'offscreen"' +
+                'aria-label="' + 
+                qualityTitle +
+                '">') +
               ('<ul class="' +
                 t.options.classPrefix +
                 'qualities-selector-list"></ul>') +
@@ -173,10 +176,11 @@
                   '</li>';
               }
             });
-            var inEvents = ['mouseenter', 'focusin'],
+
+            var mobileInEvents = ['touchstart'],
+              inEvents = ['mouseenter', 'focusin', 'keydown'],
               /* Note this line is customized from original plugin - 2017-12-18 */
               outEvents = ['mouseleave', 'blur'],
-
               radios = player.qualitiesButton.querySelectorAll(
                 'input[type="radio"]'
               ),
@@ -186,6 +190,13 @@
               selector = player.qualitiesButton.querySelector(
                 '.' + t.options.classPrefix + 'qualities-selector'
               );
+
+            // Change events based on device type (mobile/desktop)
+            if(t.isMobile()) {
+              inEvents = mobileInEvents;
+            } else {
+              outEvents.push('focusout');
+            }
 
             for (var _i = 0, _total = inEvents.length; _i < _total; _i++) {
               player.qualitiesButton.addEventListener(inEvents[_i], function() {
@@ -222,6 +233,9 @@
               radio.addEventListener('change', function() {
                 var self = this,
                   newQuality = self.value;
+
+                // Set new quality value in localStorage
+                window.localStorage.setItem('quality', newQuality);
 
                 var selected = player.qualitiesButton.querySelectorAll(
                   '.' + t.options.classPrefix + 'qualities-selected'
@@ -272,10 +286,12 @@
                   'canplay',
                   function canPlayAfterSourceSwitchHandler() {
                     media.setCurrentTime(currentTime);
-                    media.removeEventListener(
-                      'canplay',
-                      canPlayAfterSourceSwitchHandler
-                    );
+                    if(media.currentTime === currentTime) {
+                      media.removeEventListener(
+                        'canplay',
+                        canPlayAfterSourceSwitchHandler
+                      );
+                    }
                   }
                 );
               });
@@ -287,6 +303,10 @@
                   })[0],
                   event = mejs.Utils.createEvent('click', radio);
                 radio.dispatchEvent(event);
+                mejs.Utils.addClass(
+                  selector,
+                  t.options.classPrefix + 'offscreen'
+                );
               });
             }
 
@@ -356,6 +376,9 @@
           },
           keyExist: function keyExist(map, searchKey) {
             return -1 < map.get('map_keys_1').indexOf(searchKey.toLowerCase());
+          },
+          isMobile: function isMobile() {
+            return mejs.Features.isAndroid || mejs.Features.isiOS;
           }
         });
       },
@@ -364,4 +387,4 @@
   },
   {},
   [1]
-);
+));

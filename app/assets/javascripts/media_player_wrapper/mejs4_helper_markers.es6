@@ -65,6 +65,8 @@ class MEJSMarkersHelper {
         .addClass('is-editing');
       // Track original marker offset value of edited row
       originalMarkerValues[markerId] = offset;
+      // Disable ME.js keyboard shortcuts when editing markers
+      player.options.enableKeyboard = false;
     });
 
     // Cancel button click
@@ -78,6 +80,8 @@ class MEJSMarkersHelper {
 
       // Remove original marker offset value
       delete originalMarkerValues[markerId];
+      // Enable ME.js keyboard shortcuts when inline form closes
+      player.options.enableKeyboard = true;
     });
 
     // Delete button click
@@ -174,6 +178,8 @@ class MEJSMarkersHelper {
           $alertError.find('p').text(msg);
           $alertError.slideDown();
         });
+      // Enable ME.js keyboard shortcuts when inline form closes
+      player.options.enableKeyboard = true;
     });
   }
 
@@ -350,7 +356,7 @@ class MEJSMarkersHelper {
         '%" ><span class="mejs__time-float-current-marker">' +
         title +
         ' [' +
-        mejs.Utils.secondsToTimeCode(offset) +
+        mejs.Utils.secondsToTimeCode(offset, false, false, 25, 3) +
         ']' +
         '</span><span class="mejs__time-float-corner-marker"></span></span>'
     );
