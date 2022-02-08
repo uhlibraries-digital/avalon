@@ -4,8 +4,8 @@
 #
 ---
 file_system:
-  :name: 'File Dropbox'
-  :home: /srv/avalon/dropbox
+  :name: "File Dropbox"
+  :home: <%= ENV['DROPBOX_PATH'] %>
 # drop_box:
 #   :app_key: YOUR_DROPBOX_APP_KEY
 #   :app_secret: YOUR_DROPBOX_APP_SECRET
