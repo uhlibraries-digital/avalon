@@ -4,8 +4,8 @@ domain:
   port: 80
   protocol: http
 dropbox:
-  path: /srv/avalon/dropbox
-  upload_uri: sftp://avalon.example.edu
+  path: <%= ENV['DROPBOX_PATH'] %>
+  upload_uri: <%= ENV['DROPBOX_UPLOAD_URI'] %>
 encoding:
   engine_adapter: ffmpeg
   presets_path: config/ffmpeg_presets.yml
