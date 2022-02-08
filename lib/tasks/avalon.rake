@@ -181,6 +181,12 @@ EOC
     CleanupSessionJob.perform_now
   end
 
+  desc 'clean out user sessions and searches that have not been updated for 7 days'
+  task cleanup_all: :environment do
+    CleanupSessionJob.perform_now
+    DeleteOldSearchesJob.perform_now
+  end
+
   namespace :services do
     services = ["jetty", "felix", "delayed_job"]
     desc "Start Avalon's dependent services"
