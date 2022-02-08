@@ -14,7 +14,7 @@ RUN apt-get update -q && apt-get install -y \
   zip
 
 # Install ffmpeg
-RUN mkdir -p /tmp/ffmpeg && cd /tmp/ffmpeg \
+RUN mkdir -p /tmp/ffmpeg && cd /tmp/ffmpeg && \
   curl https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ  && \
   cp `find . -type f -executable` /usr/bin/
 
