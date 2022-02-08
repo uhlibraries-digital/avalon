@@ -180,7 +180,7 @@ end
 
 # Install the bundle --with mysql if using mysql as the database backend
 group :mysql, optional: true do
-  gem 'mysql2'
+  gem 'mysql2', '~> 0.4.5'
 end
 
 gem 'activerecord-nulldb-adapter'
