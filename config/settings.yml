@@ -73,10 +73,6 @@ encode_throttling:
   update_jobs_spacing: 10
 auth:
   registerable: true
-cas:
-  base_url: <%= ENV['CAS_BASE_URL'] %>
-  validate_url: <%= ENV['CAS_VALIDATE_URL'] %>
-  create_user: true
 #   configuration:
 #     - :name: Avalon Lti OAuth
 #       :provider: :lti
@@ -85,6 +81,10 @@ cas:
 #         :oauth_credentials:
 #           somekey: somesecret
 # google_analytics_tracking_id: "someid"
+cas:
+  base_url: <%= ENV['CAS_BASE_URL'] %>
+  validate_url: <%= ENV['CAS_VALIDATE_URL'] %>
+  create_user: true
 supplemental_files:
   proxy: false
 waveform:
