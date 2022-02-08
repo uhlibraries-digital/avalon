@@ -48,6 +48,11 @@ Devise.setup do |config|
   # to authenticate or find a user. Default is :email.
   config.case_insensitive_keys = [:username, :login, :email]
 
+   # Configure CAS authentication settings
+   config.cas_base_url = Settings.cas.base_url
+   config.cas_validate_url = Settings.cas.validate_url
+   config.cas_create_user = Settings.cas.create_user
+
   # Configure which authentication keys should have whitespace stripped.
   # These keys will have whitespace before and after removed upon creating or
   # modifying a user and when used to authenticate or find a user. Default is :email.

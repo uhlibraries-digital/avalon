@@ -1,4 +1,4 @@
-name: 'Avalon Media System' # used in page titles
+name: "Avalon Media System" # used in page titles
 domain:
   host: localhost
   port: 80
@@ -10,18 +10,18 @@ encoding:
   engine_adapter: ffmpeg
   presets_path: config/ffmpeg_presets.yml
 mediainfo:
-  path: '/usr/bin/mediainfo --urlencode' # Fixes mediainfo v20.03 bug with S3 presigned URL
+  path: "/usr/bin/mediainfo --urlencode" # Fixes mediainfo v20.03 bug with S3 presigned URL
 ffmpeg:
-  path: '/usr/local/bin/ffmpeg'
+  path: "/usr/local/bin/ffmpeg"
 email:
   mailer: :smtp
   config:
     address: mail-relay.university.edu
     port: 25
     enable_starttls_auto: false
-  comments: 'avalon-comments@example.edu'
-  notification: 'avalon-notifications@example.edu'
-  support: 'avalon-support@example.edu'
+  comments: "avalon-comments@example.edu"
+  notification: "avalon-notifications@example.edu"
+  support: "avalon-support@example.edu"
 solr:
   configset: avalon
   configset_source_path: <%= File.join(Rails.root, 'solr', 'config') %>
@@ -45,25 +45,25 @@ zookeeper:
 streaming:
   server: :generic
   stream_token_ttl: 20 #minutes
-  content_path: '/srv/avalon/content'
-  rtmp_base: 'rtmp://localhost/avalon'
-  http_base: 'http://localhost:3000/streams'
-  default_quality: 'auto'
+  content_path: "/srv/avalon/content"
+  rtmp_base: "rtmp://localhost/avalon"
+  http_base: "http://localhost:3000/streams"
+  default_quality: "auto"
 redis:
   host: localhost
   port: 6379
 groups:
   system_groups: [administrator, group_manager, manager]
 master_file_management:
-  strategy: 'none' #'delete', or 'move' (for move uncomment and configure next line)
+  strategy: "none" #'delete', or 'move' (for move uncomment and configure next line)
   #path: '/path/to/move/to'
 bib_retriever:
   default:
     protocol: sru
     url: http://zgate.example.edu:9000/exampledb
     query: rec.id='%s'
-    retriever_class: 'Avalon::BibRetriever::SRU'
-    retriever_class_require: 'avalon/bib_retriever/sru'
+    retriever_class: "Avalon::BibRetriever::SRU"
+    retriever_class_require: "avalon/bib_retriever/sru"
 controlled_vocabulary:
   path: config/controlled_vocabulary.yml
 encode_throttling:
@@ -73,6 +73,10 @@ encode_throttling:
   update_jobs_spacing: 10
 auth:
   registerable: true
+cas:
+  base_url: <%= ENV['CAS_BASE_URL'] %>
+  validate_url: <%= ENV['CAS_VALIDATE_URL'] %>
+  create_user: true
 #   configuration:
 #     - :name: Avalon Lti OAuth
 #       :provider: :lti

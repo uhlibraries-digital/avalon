@@ -26,18 +26,28 @@ class User < ActiveRecord::Base
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable
   # Registration is controlled via settings.yml
-  devise_list = [ :database_authenticatable, :invitable, :omniauthable,
-                  :recoverable, :rememberable, :trackable, :validatable ]
-  devise_list << :registerable if Settings.auth.registerable
-  devise_list << { authentication_keys: [:login] }
+  # devise_list = [ :database_authenticatable, :invitable, :omniauthable,
+  #                 :recoverable, :rememberable, :trackable, :validatable ]
+  # devise_list << :registerable if Settings.auth.registerable
+  # devise_list << { authentication_keys: [:login] }
 
-  devise(*devise_list)
+  # devise(*devise_list)
+  devise :cas_authenticatable
 
   validates :username, presence: true, uniqueness: { case_sensitive: false }
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   validate :username_email_uniqueness
 
   before_destroy :remove_bookmarks
+
+  def cas_extra_attributes=(extra_attributes)
+    extra_attributes.each do |name, value|
+      case name.to_sym
+        when :extensionAttribute15
+          self.email = value
+      end
+    end
+  end
 
   def username_email_uniqueness
     errors.add(:email, :taken, value: email) if User.find_by_username(email) && User.find_by_username(email).id != id
