@@ -38,7 +38,7 @@ COPY Gemfile.lock /avalon-app/Gemfile.lock
 
 RUN  gem install bundler -v "$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1)" && \
   bundle config build.nokogiri --use-system-libraries
-RUN bundle install
+RUN bundle install --with mysql
 
 COPY . /avalon-app
 
