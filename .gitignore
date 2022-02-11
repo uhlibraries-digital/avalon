@@ -22,11 +22,13 @@
 
 config/settings/production.yml
 config/settings.local.yml
+config/controlled_vocabulary.yml
 
 public/media_objects
 public/streams
 public/**/*.m3u8
 public/**/*.ts
+public/packs
 
 masterfiles/*
 /coverage
@@ -36,3 +38,4 @@ migration_report
 /dropbox/*
 !/dropbox/.keep
 .env-development
+node_modules

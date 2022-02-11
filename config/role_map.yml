@@ -1,10 +1,10 @@
 development:
   administrator:
-    - archivist1@example.com
+    - <%= Settings.initial_user %>
   manager:
-    - archivist1@example.com
+    - <%= Settings.initial_user %>
   group_manager:
-    - archivist1@example.com
+    - <%= Settings.initial_user %>
 
 test:
   administrator:
