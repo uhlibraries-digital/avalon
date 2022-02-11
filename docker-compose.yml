@@ -24,7 +24,7 @@ services:
       - SETTINGS__REDIS__PORT=6379
       - DROPBOX_PATH=/var/avalon/dropbox
       - DROPBOX_UPLOAD_URI=/dropbox
-      - ENCODE_WORK_DIR=/var/avalon/uploads
+      - ENCODE_WORK_DIR=/streams/rtmp_streams/
       - SECRET_KEY_BASE=abcd1234
     ports:
       - 3000:3000
