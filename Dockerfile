@@ -53,3 +53,4 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 ADD . /avalon-app
 
 RUN  yarn install
+RUN cp /avalon-app/config/controlled_vocabulary.yml.example /avalon-app/config/controlled_vocabulary.yml
