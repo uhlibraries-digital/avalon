@@ -13,4 +13,4 @@ production:
   password: <%= ENV['FEDORA_PASSWORD'] %>
   url: <%= ENV['FEDORA_URL'] %>
   base_path: <%= ENV['FEDORA_BASE_PATH'] %>
-  request: { timeout: 600, open_timeout: 60 } # Increase if Fedora connection times out for large operations
+  request: { timeout: 600, open_timeout: 600 } # Increase if Fedora connection times out for large operations
