@@ -77,8 +77,11 @@ config.webpacker.check_yarn_integrity = false
 
   # Use the lowest log level to ensure availability of diagnostic information
   # when problems arise.
-  config.log_level = :info
-
+  if ENV["RAILS_LOG_LEVEL"].present?
+    config.log_level = ENV["RAILS_LOG_LEVEL"].to_sym
+  else
+    config.log_level = :info
+  end
   # Suppress logger output for asset requests.
   config.assets.quiet = true
   

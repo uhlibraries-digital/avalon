@@ -58,7 +58,8 @@ RUN chmod +x /usr/local/bin/entrypoint-production.sh
 ENV RAILS_ENV=production \
   RAILS_SERVE_STATIC_FILES=true \
   RAILS_CACHE_STORE_URL=memcache \
-  RAILS_LOG_TO_STDOUT=true
+  RAILS_LOG_TO_STDOUT=true \
+  RAILS_LOG_LEVEL=info
 
 EXPOSE 3000
 HEALTHCHECK CMD curl --fail http://localhost:3000/ || exit 1
