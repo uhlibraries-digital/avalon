@@ -4,8 +4,8 @@ RUN echo "deb http://deb.debian.org/debian stretch-backports main" >> /etc/apt/s
 RUN curl -fsSL https://deb.nodesource.com/setup_8.x | bash -
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
   echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-RUN wget https://mediaarea.net/repo/deb/repo-mediaarea_1.0-19_all.deb && dpkg -i repo-mediaarea_1.0-19_all.deb && apt-get update
-RUN apt-get update -q && apt-get install -y \
+RUN wget https://mediaarea.net/repo/deb/repo-mediaarea_1.0-6_all.deb && dpkg -i repo-mediaarea_1.0-6_all.deb
+RUN apt-get update -q && apt-get install -y --allow-unauthenticated \
   build-essential \
   imagemagick \
   ffmpeg \
@@ -15,8 +15,7 @@ RUN apt-get update -q && apt-get install -y \
   git \
   nodejs \
   yarn \
-  zip \
-  nano
+  zip
 
 # Install ffmpeg
 RUN mkdir -p /tmp/ffmpeg && cd /tmp/ffmpeg && \
@@ -32,7 +31,6 @@ RUN mkdir /avalon-app
 RUN mkdir -p /streams/hls_streams
 RUN mkdir -p /var/avalon/uploads
 RUN mkdir -p /var/avalon/dropbox
-RUN mkdir -p /var/avalon/working
 WORKDIR /avalon-app
 
 # Install gems
