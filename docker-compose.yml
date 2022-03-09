@@ -23,7 +23,7 @@ services:
       - SETTINGS__REDIS__PORT=6379
       - DROPBOX_PATH=/var/avalon/dropbox
       - DROPBOX_UPLOAD_URI=/dropbox
-      - ENCODE_WORK_DIR=/streams/rtmp_streams/
+      - ENCODE_WORK_DIR=/streams/
       - SECRET_KEY_BASE=abcd1234
       - CAS_BASE_URL=https://signin.lib.uh.edu/test/
       - CAS_VALIDATE_URL=https://signin.lib.uh.edu/test/p3/serviceValidate
@@ -40,7 +40,6 @@ services:
       - ./dropbox:/var/avalon/dropbox
       - streams:/streams
       - uploads:/var/avalon/uploads
-      - working:/var/avalon/working
 
   worker:
     <<: *app
@@ -71,6 +70,8 @@ services:
   fcrepo:
     image: ghcr.io/samvera/fcrepo4:4.7.5
     restart: always
+    environment:
+      - JAVA_OPTIONS=-Dfcrepo.log=DEBUG
     volumes:
       - fcrepo:/data:cached
     depends_on:
@@ -98,7 +99,6 @@ volumes:
   db:
   streams:
   uploads:
-  working:
   redis:
   fcrepo:
   solr:
