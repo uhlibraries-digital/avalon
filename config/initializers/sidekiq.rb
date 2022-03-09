@@ -1,6 +1,9 @@
 redis_conn = { url: "redis://#{Settings.redis.host}:#{Settings.redis.port}/" }
 Sidekiq.configure_server do |s|
   s.redis = redis_conn
+  if ENV["RAILS_LOG_LEVEL"].present?
+    s.logger.level = ENV["RAILS_LOG_LEVEL"].to_sym
+  end
 end
 
 Sidekiq.configure_client do |s|
