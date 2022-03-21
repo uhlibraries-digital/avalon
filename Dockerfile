@@ -1,11 +1,9 @@
-FROM ruby:2.5.5-stretch
+FROM ruby:2.7-bullseye
 
-RUN echo "deb http://deb.debian.org/debian stretch-backports main" >> /etc/apt/sources.list
-RUN curl -fsSL https://deb.nodesource.com/setup_8.x | bash -
+RUN curl -fsSL https://deb.nodesource.com/setup_12.x | bash -
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
   echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-RUN wget https://mediaarea.net/repo/deb/repo-mediaarea_1.0-6_all.deb && dpkg -i repo-mediaarea_1.0-6_all.deb
-RUN apt-get update -q && apt-get install -y --allow-unauthenticated \
+RUN apt-get update -q && apt-get install -y \
   build-essential \
   imagemagick \
   ffmpeg \
@@ -16,11 +14,6 @@ RUN apt-get update -q && apt-get install -y --allow-unauthenticated \
   nodejs \
   yarn \
   zip
-
-# Install ffmpeg
-RUN mkdir -p /tmp/ffmpeg && cd /tmp/ffmpeg && \
-  curl https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ  && \
-  cp `find . -type f -executable` /usr/bin/
 
 # Setup lsof since Avalon likes to look in /usr/sbin for it
 RUN ln -s /usr/bin/lsof /usr/sbin/lsof
@@ -51,5 +44,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ADD . /avalon-app
 
+# Install node modules
 RUN  yarn install
+
+# Install example vocabulary
 RUN cp /avalon-app/config/controlled_vocabulary.yml.example /avalon-app/config/controlled_vocabulary.yml

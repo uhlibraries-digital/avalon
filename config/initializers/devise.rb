@@ -48,10 +48,10 @@ Devise.setup do |config|
   # to authenticate or find a user. Default is :email.
   config.case_insensitive_keys = [:username, :login, :email]
 
-   # Configure CAS authentication settings
-   config.cas_base_url = Settings.cas.base_url
-   config.cas_validate_url = Settings.cas.validate_url
-   config.cas_create_user = Settings.cas.create_user
+  # Configure CAS authentication settings
+  config.cas_base_url = Settings.cas.base_url
+  config.cas_validate_url = Settings.cas.validate_url
+  config.cas_create_user = Settings.cas.create_user
 
   # Configure which authentication keys should have whitespace stripped.
   # These keys will have whitespace before and after removed upon creating or
@@ -346,4 +346,13 @@ Devise.setup do |config|
   # so you need to do it manually. For the users scope, it would be:
   # config.omniauth_path_prefix = '/my_engine/users/auth'
   OmniAuth.config.logger = Rails.logger
+end
+
+# Override script_name to always return empty string and avoid looking in @env
+# This override is needed due to our direct rendering of the identity login form in AuthFormsController
+# which doesn't initialize @env leading to a NoMethodError when trying read a hash value from it.
+OmniAuth::Strategies::Identity.class_eval do
+  def script_name
+    ''
+  end
 end

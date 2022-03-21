@@ -82,6 +82,7 @@ config.webpacker.check_yarn_integrity = false
   else
     config.log_level = :info
   end
+
   # Suppress logger output for asset requests.
   config.assets.quiet = true
   

@@ -1,4 +1,4 @@
-# Copyright 2011-2020, The Trustees of Indiana University and Northwestern
+# Copyright 2011-2022, The Trustees of Indiana University and Northwestern
 #   University.  Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #
@@ -179,12 +179,6 @@ EOC
   desc 'clean out user sessions that have not been updated for 7 days'
   task session_cleanup: :environment do
     CleanupSessionJob.perform_now
-  end
-
-  desc 'clean out user sessions and searches that have not been updated for 7 days'
-  task cleanup_all: :environment do
-    CleanupSessionJob.perform_now
-    DeleteOldSearchesJob.perform_now
   end
 
   namespace :services do
