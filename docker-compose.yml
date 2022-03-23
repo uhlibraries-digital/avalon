@@ -21,6 +21,7 @@ services:
       - REDIS_SERVER=redis:6379
       - SETTINGS__REDIS__HOST=redis
       - SETTINGS__REDIS__PORT=6379
+      - SETTINGS__REDIS__DB=0
       - DROPBOX_PATH=/var/avalon/dropbox
       - DROPBOX_UPLOAD_URI=/dropbox
       - ENCODE_WORK_DIR=/streams/
