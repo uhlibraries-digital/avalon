@@ -154,7 +154,7 @@ group :aws, optional: true do
   gem 'aws-partitions'
   gem 'aws-sdk-rails'
   gem 'aws-sdk-cloudfront'
-  gem 'aws-sdk-elastictranscoder'
+  #gem 'aws-sdk-elastictranscoder'
   gem 'aws-sdk-s3'
   gem 'aws-sdk-ses'
   gem 'aws-sdk-sqs'
@@ -178,8 +178,11 @@ group :mysql, optional: true do
   gem 'mysql2', '~> 0.4.5'
 end
 
+# Gems for UHL
+
 gem 'activerecord-nulldb-adapter'
 gem 'devise_cas_authenticatable', '1.10.4'
+gem 'aws-sdk-elastictranscoder' # required since 7.3.0 due to require statements in base code
 
 extra_gems = File.expand_path("../Gemfile.local", __FILE__)
 eval File.read(extra_gems) if File.exist?(extra_gems)
