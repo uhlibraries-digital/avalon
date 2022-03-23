@@ -32,7 +32,7 @@ class User < ActiveRecord::Base
   # devise_list << { authentication_keys: [:login] }
 
   # devise(*devise_list)
-  devise :cas_authenticatable
+  devise :cas_authenticatable, :invitable
 
   validates :username, presence: true, uniqueness: { case_sensitive: false }
   validates :email, presence: true, uniqueness: { case_sensitive: false }
@@ -47,6 +47,7 @@ class User < ActiveRecord::Base
           self.email = value
       end
     end
+    self.provider = 'CAS'
   end
 
   def username_email_uniqueness

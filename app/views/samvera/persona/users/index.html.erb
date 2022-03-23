@@ -16,6 +16,8 @@ Unless required by applicable law or agreed to in writing, software distributed
 <%# Override of samvera-persona view partial to update table display %>
 <%= render partial: 'index_title' %>
 
+<%# START Remove Invite %>
+<% if false %>
 <div class="panel panel-default users-invite">
   <div class="panel-heading">
       <%= t('.invite_users') %>
@@ -37,7 +39,8 @@ Unless required by applicable law or agreed to in writing, software distributed
     <% end %>
   </div>
 </div>
-
+<% end %>
+<%# END Remove Invite %>
 
 <div class="users-listing">
   <table id="users-table" class="table table-striped datatable">
@@ -58,8 +61,20 @@ Unless required by applicable law or agreed to in writing, software distributed
       <% @presenter.users.each do |user| %>
         <% last_accessed=@presenter.last_accessed(user).getutc.iso8601 %>
         <tr>
-          <td><%= link_to user.username, main_app.edit_persona_user_path(user) %></td>
-          <td><%= link_to user.email, main_app.edit_persona_user_path(user) %></td>
+          <td>
+          <% if user.has_attribute?(:provider) && !user.provider.nil? %>
+          <span data-toggle="tooltip" title="Edit user is unavailable because this user is single sign on"><%= user.username %></span>
+          <% else %>
+          <%= link_to user.username, main_app.edit_persona_user_path(user) %>
+          <% end %>
+          </td>
+          <td>
+          <% if user.has_attribute?(:provider) && !user.provider.nil? %>
+          <span data-toggle="tooltip" title="Edit user is unavailable because this user is single sign on"><%= user.email %></span>
+          <% else %>
+          <%= link_to user.email, main_app.edit_persona_user_path(user) %>
+          <% end %>
+          </td>
           <td><% roles = @presenter.user_roles(user) %>
               <ul><% roles.each do |role| %>
                 <li><%= role %></li>
@@ -72,7 +87,7 @@ Unless required by applicable law or agreed to in writing, software distributed
               <%= @presenter.last_accessed(user).to_formatted_s(:long_ordinal) %>
             </relative-time>
           </td>
-          <td><%= user.accepted_or_not_invited? ? t('.status.active') : t('.status.pending') %></td>
+          <td><%= user.accepted_or_not_invited? ? t('.status.active') : t('.status.pending') %></td>          
           <% if user.has_attribute?(:provider) %>
             <td>
               <%= user.provider %>
