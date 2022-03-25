@@ -1,0 +1,1368 @@
+/*
+ * University of Houston
+ * Style sheet for UH headers and footers
+ *
+ * Table of Contents:
+ * ------------------
+ * Import Web Fonts
+ * Import normalize.css
+ * Base Styles
+ * Grid Container
+ * Accessibility
+ * General Header Styles
+ * Global Navigation Container
+ * Tactical Links
+ * Site Name
+ * Site Navigation Container
+ * Menu Button
+ * Primary Navigation
+ * Responsive Menu Styles
+ * General Footer Styles
+ * Site Footer
+ * Global Footer
+ * Browser Upgrade
+ *
+ */
+
+
+html {
+  font-size: 16px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  -webkit-box-sizing: inherit;
+  box-sizing: inherit;
+}
+
+
+@-ms-viewport {
+  width: device-width;
+}
+
+/*
+@-moz-viewport {
+  width: device-width;
+}
+
+
+@-webkit-viewport {
+  width: device-width;
+}
+*/
+
+@viewport {
+  width: device-width;
+}
+
+
+a,
+area,
+button,
+[role="button"],
+input,
+label,
+select,
+summary,
+textarea {
+  -ms-touch-action: manipulation;
+  touch-action: manipulation;
+}
+
+nav ul,
+nav ol,
+nav li {
+  list-style: none;
+  margin-bottom: 0;
+  padding-left: 0;
+}
+
+/* ==========================================================================
+ Grid Container
+ ========================================================================== */
+
+.container {
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 1600px;
+  padding-right: 1.25rem;
+  padding-left: 1.25rem;
+  width: 100%;
+
+  max-width: 1400px;
+}
+
+@media screen and (min-width: 768px) {
+  .container {
+    padding-right: 2.5rem;
+    padding-left: 2.5rem;
+  }
+}
+
+
+/* ==========================================================================
+ Accessibility
+ ========================================================================== */
+
+.skipToContent {
+  background: #c8102e;
+  color: #FFF9D9;
+  font-size: .875rem;
+  /* 14px */
+  padding: .5em 1em;
+  position: absolute;
+  margin-left: -1000px;
+}
+
+.skipToContent:focus {
+  margin-left: 0;
+}
+
+/* ==========================================================================
+ General Header Styles
+ ========================================================================== */
+
+.uh-header {
+  background-color: #c8102e;
+  position: relative;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+}
+
+.uh-header-secondary-red {
+  background-color: #54585A;
+}
+
+.uh-header a,
+.uh-header a:visited {
+  color: #FFF9D9;
+  text-decoration: none;
+}
+
+.uh-header a:hover,
+.uh-header a:focus,
+.uh-header a:visited:hover {
+  color: white;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+ Search
+ ========================================================================== */
+
+.uh-header .global-search {
+  background: #eee;
+  display: block;
+  font-size: 1rem;
+  /* 16px */
+  line-height: 1.5;
+  margin: 0;
+  overflow: hidden;
+  position: relative;
+  transition: margin .25s ease;
+}
+
+.uh-header-primary .global-search {
+  margin-top: 3rem;
+}
+
+.uh-header .global-search.collapse.in {
+  margin-top: 0;
+}
+
+.uh-header .global-search .container {
+  padding-top: .5em;
+  padding-bottom: .5em;
+  /* position: relative; */
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+}
+
+.uh-header .global-search input,
+.uh-header .global-search button {
+  color: #222;
+}
+
+.uh-header .global-search ::-webkit-input-placeholder {
+  color: #222;
+  opacity: 0.54;
+}
+
+.uh-header .global-search ::-ms-input-placeholder {
+  color: #888;
+  opacity: 1;
+}
+
+.uh-header .global-search .search-field {
+  border: none;
+  border-radius: 20px;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.125), 0 0 0 1px rgba(0, 0, 0, 0.2);
+  padding: .25rem .75em;
+  font-size: 1.125rem;
+  /* 18px */
+  line-height: 1.5rem;
+  /* line-height: 1.5; */
+  -webkit-flex-grow: 1;
+  flex-grow: 1;
+}
+
+.uh-header .global-search .search-field:focus {
+  outline: 0;
+}
+
+.uh-header .global-search label {
+  margin: .25em 0 0;
+  padding: .25em 0;
+}
+
+.uh-header .global-search input[type='checkbox'] {
+  margin-right: .25em;
+}
+
+.uh-header .global-search button {
+  border: none;
+  border-radius: .25em;
+  font-size: inherit;
+  line-height: 1.5;
+  padding: .25em .75em;
+}
+
+.uh-header .global-search .search-submit {
+  color: #FFF9D9;
+  background-color: #c8102e;
+}
+
+.uh-header .global-search .search-close {
+  background: none;
+  color: #c8102e;
+  display: none;
+  margin-right: -.75em;
+}
+
+.uh-header .global-search button svg {
+  display: block;
+  fill: currentColor;
+  float: left;
+  height: 1.5em;
+  margin-right: .25em;
+  width: 1.5em;
+}
+
+.uh-header .global-search .search-submit {
+  background-color: transparent;
+  border: 0;
+  color: transparent;
+  /*font: 0/0 a;*/
+  height: 2rem;
+  text-indent: 999em;
+  /* needed for older android devices */
+  text-shadow: none;
+  overflow: hidden;
+  padding: .25em;
+  width: 2rem;
+  position: absolute;
+  top: .5rem;
+  right: 1.75rem;
+}
+
+.uh-header .global-search .search-submit svg {
+  fill: #c8102e;
+  float: none;
+  margin: 0;
+}
+
+@media screen and (min-width: 992px) {
+  .uh-header .global-search {
+    margin-top: -3rem;
+  }
+
+  .uh-header .global-search .container {
+    -webkit-flex-direction: row;
+    flex-direction: row;
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+  }
+
+  .uh-header .global-search .search-field,
+  .uh-header .global-search .search-submit {
+    -webkit-order: -1;
+    order: -1;
+  }
+
+  .uh-header .global-search .search-field,
+  .uh-header .global-search label,
+  .uh-header .global-search .search-submit {
+    margin-right: 1em;
+  }
+
+  .uh-header .global-search label {
+    margin: 0 1em 0 0;
+    /* padding: .25em 0; */
+  }
+
+  .uh-header .global-search .search-submit {
+    position: static;
+    margin: 0;
+    margin-left: -3.25rem;
+    margin-right: 1.125rem;
+  }
+
+  .uh-header .global-search .search-close {
+    display: block;
+  }
+}
+
+/* ==========================================================================
+ Global Navigation Container
+ ========================================================================== */
+
+.uh-header .global-nav {
+  overflow: hidden;
+  padding: 0;
+}
+
+.uh-header .global-logo {
+  left: 0;
+  height: 3rem;
+  /* fixes bug in IE11 */
+  padding: 0 1.25rem;
+  position: absolute;
+  top: 0;
+  right: 4.25rem;
+  -webkit-align-items: center;
+  align-items: center;
+  display: -webkit-flex;
+  display: flex;
+}
+
+.uh-header .global-logo a {
+  display: block;
+  max-width: 260px;
+  min-width: 220px;
+  width: 50%;
+}
+
+.uh-header .global-logo img,
+.uh-header .global-logo svg {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.uh-header .global-logo svg {
+  fill: white;
+}
+
+@media screen and (min-width: 768px) {
+  .uh-header .global-logo {
+    padding: 0 2.5rem;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  .uh-header {
+    display: block;
+    z-index: 100;
+  }
+
+  .uh-header .global-nav {
+    /* https://www.smashingmagazine.com/2016/05/fluid-typography/#controlling-the-rate-of-scale */
+    font-size: calc(14px + (16 - 14) * (100vw - 992px) / (1200 - 992));
+    /* scale between 14px and 16px (see above link) */
+  }
+
+  .uh-header-primary .global-nav {
+    margin-bottom: -3em;
+    position: relative;
+  }
+
+  .uh-header .global-nav .container {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+  }
+
+  .uh-header-primary .global-nav .container {
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+  }
+
+  .uh-header .global-logo {
+    margin-right: 2.5rem;
+    padding: 0;
+    position: static;
+    -webkit-align-self: center;
+    align-self: center;
+    -webkit-flex-basis: 260px;
+    flex-basis: 260px;
+    -webkit-flex-grow: 1;
+    flex-grow: 1;
+    -webkit-flex-shrink: 1;
+    flex-shrink: 1;
+  }
+
+  .uh-header-primary .global-logo {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .uh-header .global-nav {
+    font-size: 1rem;
+    /* 16px */
+  }
+}
+
+/* ==========================================================================
+ Tactical Links
+ ========================================================================== */
+
+.uh-header .nav-tactical {
+  line-height: 1.5;
+  margin: 0 -.75em;
+  /*padding-top: .5em;*/
+
+  line-height: 1;
+}
+
+.uh-header .nav-tactical a {
+  display: block;
+  padding: .5em .75em;
+}
+
+.uh-header .nav-tactical a svg,
+.uh-header .nav-tactical a img {
+  display: block;
+  float: left;
+  height: 1.5em;
+  margin-right: .5em;
+  width: 1.5em;
+
+  height: 1em;
+  width: 1em;
+}
+
+.uh-header .nav-tactical a svg,
+.uh-header .nav-tactical a svg * {
+  fill: currentColor !important;
+}
+
+.uh-header .nav-tactical .nav-link-search {
+  display: none;
+}
+
+@media screen and (min-width: 992px) {
+  .uh-header .nav-tactical {
+    -webkit-align-items: center;
+    align-items: center;
+    display: -webkit-flex;
+    display: flex;
+    /*padding-top: 0;*/
+  }
+
+  .uh-header .nav-tactical a {
+    padding: .75em;
+  }
+
+  .uh-header .nav-tactical .nav-link-search {
+    display: block;
+    opacity: 1;
+    transition: opacity .25s ease, color .25s ease;
+  }
+
+  .active-search .uh-header .nav-tactical .nav-link-search {
+    color: black;
+    opacity: .25;
+  }
+
+}
+
+@media screen and (max-width: 991px) {
+
+  ul.nav-tactical li {
+    margin: 1rem 0;
+  }
+
+
+}
+
+
+/* ==========================================================================
+ Site Name
+ ========================================================================== */
+
+.uh-header:not(.uh-header-primary) .site-name {
+  margin-top: 3rem;
+  -webkit-order: -1;
+  order: -1;
+}
+
+.uh-header-primary .site-name {
+  display: none;
+}
+
+.uh-header-secondary .site-name {
+  background-color: #960C22;
+  color: white;
+  font-family: 'League Gothic', sans-serif;
+  /* https://www.smashingmagazine.com/2016/05/fluid-typography/#controlling-the-rate-of-scale */
+  font-size: calc(22px + (44 - 22) * (100vw - 320px) / (992 - 320));
+  /* scale between 22px and 44px (see above link) */
+  line-height: 1.06818181818182em;
+  line-height: calc(1em + 3px);
+  padding: .25em 0 calc(.25em + 3px);
+}
+
+.uh-header-secondary-slate .site-name {
+  background-color: #54585A;
+}
+
+.uh-header-secondary-red .site-name {
+  background-color: #c8102e;
+}
+
+.uh-header-secondary-white .site-name {
+  background-color: white;
+  color: #54585A;
+}
+
+.uh-header-secondary .site-name h1 {
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+  padding: 0;
+  text-transform: none;
+}
+
+.uh-header .site-name a,
+.uh-header .site-name svg,
+.uh-header .site-name img {
+  display: inline-block;
+}
+
+.uh-header .site-name a,
+.uh-header .site-name a:visited {
+  color: white;
+}
+
+.uh-header-primary .site-name a {
+  display: block;
+  height: 0;
+  padding: 0 0 26.923076923077%;
+  position: relative;
+  width: 100%;
+}
+
+.uh-header-primary .site-name img,
+.uh-header-primary .site-name svg {
+  display: block;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.uh-header-primary .site-name svg {
+  fill: white;
+}
+
+.uh-header-secondary-white .site-name a,
+.uh-header-secondary-white .site-name a:visited {
+  color: inherit;
+}
+
+.uh-header-custom .site-name {
+  background-color: white;
+  padding: 2.5rem 0;
+}
+
+.uh-header-custom .site-name img {
+  max-width: 500px;
+  width: 100%;
+}
+
+@media screen and (min-width: 992px) {
+  .uh-header:not(.uh-header-primary) .site-name {
+    margin-top: 0;
+  }
+
+  .uh-header-primary .site-name {
+    display: block;
+    min-width: 0;
+    /* fixes a bug where Edge ignores flex-basis here */
+    -webkit-flex-basis: 260px;
+    flex-basis: 260px;
+    -webkit-flex-grow: 0;
+    flex-grow: 0;
+    -webkit-flex-shrink: 1;
+    flex-shrink: 1;
+  }
+
+  .uh-header-secondary .site-name {
+    font-size: 3.75rem;
+    /* 60px */
+    /* https://www.smashingmagazine.com/2016/05/fluid-typography/#controlling-the-rate-of-scale */
+    font-size: calc(44px + (60 - 44) * (100vw - 992px) / (1200 - 992));
+    /* scale between 44px and 60px (see above link) */
+    margin-top: 0;
+    padding: .25em 0 calc(.25em - 3px);
+  }
+
+  .uh-header-custom .site-name {
+    margin-top: 0;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .uh-header-secondary .site-name {
+    font-size: 3.75rem;
+    /* 60px */
+  }
+}
+
+/**Use this to remove site-name on mobile view**/
+
+
+@media screen and (max-width: 991px) {
+  .site-name .container {
+    display: none;
+  }
+
+  .uh-header-secondary .site-name {
+    padding: 0;
+  }
+
+  nav.global-nav .container {
+    /*border-top: 1px #fff9d9 solid;
+  border-bottom: 1px #fff9d9 solid;*/
+    background: #888b8d;
+  }
+
+}
+
+
+
+/* ==========================================================================
+ Site Navigation Container
+ ========================================================================== */
+
+.uh-header-secondary .site-nav {
+  background-color: #960C22;
+}
+
+.uh-header-secondary-slate .site-nav {
+  background-color: #54585A;
+}
+
+.uh-header-secondary-red .site-nav {
+  background-color: #c8102e;
+}
+
+.uh-header-secondary-white .site-nav {
+  background-color: #54585A;
+}
+
+@media screen and (min-width: 992px) {
+  .uh-header-primary .site-nav {
+    padding: 2rem 0;
+    /*padding: calc(32px + (40 - 32) * (100vw - 992px) / (1200 - 992)) 0;*/
+  }
+
+  .uh-header-primary .site-nav .container {
+    display: -webkit-flex;
+    display: flex;
+  }
+}
+
+/* ==========================================================================
+ Menu Button
+ ========================================================================== */
+
+.uh-header .menu-button {
+  background: none;
+  border: none;
+  color: #fff9d9;
+  cursor: pointer;
+  display: block;
+  height: 3rem;
+  padding: .75rem;
+  position: absolute;
+  right: 1.25rem;
+  top: 0;
+  width: 3rem;
+}
+
+.uh-header .menu-button svg {
+  fill: currentColor;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.uh-header .menu-button-active {
+  background-color: #960C22;
+}
+
+@media only screen and (min-width: 768px) {
+  .uh-header .menu-button {
+    right: 2.55rem;
+  }
+
+  .uh-header .global-search .search-submit {
+    right: 3rem;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .uh-header .menu-button {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+ Primary Navigation
+ ========================================================================== */
+#header-navbar .navbar-nav {
+  font-weight: bold;
+  line-height: 1.5;
+  min-height: auto;
+
+  &>li {
+    &.active a {
+      background: rgba(0, 0, 0, .25);
+    }
+
+    &>a {
+      transition: color .25s ease;
+      transition: background .25s ease;
+
+      &:hover,
+      &:focus {
+        background: rgba(0, 0, 0, .25);
+      }
+    }
+  }
+
+  .manage-btn {
+    background-color: #960C22;
+    transition: color .25s ease;
+    transition: background .25s ease;
+    font-weight: bold;
+    color: #FFF9D9;
+    height: 51px;
+    font-size: inherit;
+
+    &:hover {
+      color: white;
+      background: rgba(0, 0, 0, .25) !important;
+    }
+  }
+}
+
+#header-navbar a,
+#header-navbar a:visited {
+  color: #FFF9D9;
+  text-decoration: none;
+  line-height: 1.5;
+}
+
+#header-navbar a:hover,
+#header-navbar a:focus,
+#header-navbar a:visited:hover {
+  color: white;
+  text-decoration: none;
+}
+
+@media screen and (min-width: 768px) {
+  #header-navbar .navbar-nav {
+    margin: 0 -2.5rem;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  #header-navbar .navbar-nav {
+    font-size: calc(15px + (18 - 15) * (100vw - 970px)/(1200 - 970));
+    margin: 0 -0.75rem;
+  }
+
+  #header-navbar .navbar-nav a {
+    padding: 0.75rem;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  #header-navbar .navbar-nav {
+    font-size: 1.125rem;
+  }
+}
+
+
+/* ==========================================================================
+ Responsive Menu Styles
+ ========================================================================== */
+
+@media screen and (max-width: 991px) {
+
+  .uh-header .global-search,
+  .uh-header .global-nav,
+  .uh-header .nav-primary,
+  .uh-header *[id^='menu-alt-header'] {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease;
+  }
+
+  .active-nav .uh-header .global-nav {
+    max-height: 20rem;
+  }
+
+  .active-nav .uh-header .global-search {
+    max-height: 10rem;
+  }
+
+  .active-nav .uh-header .nav-primary,
+  .active-nav .uh-header *[id^='menu-alt-header'] {
+    max-height: 100rem;
+    transition: max-height 1s ease;
+  }
+}
+
+
+
+/* ------------------------------------------ */
+/* footer */
+/* ------------------------------------------ */
+
+#footer {
+  color: white;
+}
+
+.uh-footer {
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  height: auto;
+  line-height: normal;
+  /*max-width: 1920px;*/
+}
+
+.uh-footer .container {
+  max-width: 1400px;
+  width: 100%;
+}
+
+.uh-footer a,
+.uh-footer a:visited {
+  color: #FFF9D9;
+  text-decoration: none;
+}
+
+.uh-footer a:hover,
+.uh-footer a:focus,
+.uh-footer a:visited:hover {
+  color: white;
+  text-decoration: none;
+}
+
+
+.uh-footer .site-footer {
+  background-color: #c8102e;
+  color: white;
+  font-size: 1rem;
+  /* 16px */
+  line-height: 1.3125em;
+  line-height: calc(1.5em - 3px);
+  padding: calc(1.5em - 3px) 0;
+}
+
+.uh-footer-slate .site-footer {
+  background-color: #54585A;
+}
+
+.uh-footer-brick .site-footer {
+  background-color: #960C22;
+}
+
+.uh-footer .site-footer .container {
+  display: block;
+  padding: 0 2.5rem;
+}
+
+.uh-footer .site-footer h1,
+.uh-footer .site-footer h2,
+.uh-footer .site-footer h3 {
+  font-family: 'League Gothic';
+  margin-top: 0;
+}
+
+.uh-footer .site-footer h1 {
+  font-size: 2.25rem;
+  text-transform: uppercase;
+}
+
+.uh-footer .site-footer h2 {
+  font-size: 1.6875rem;
+  text-transform: uppercase;
+}
+
+.uh-footer .site-footer h3 {
+  font-size: 1.125rem;
+}
+
+.uh-footer .site-footer .contact-block,
+.uh-footer .site-footer .footer-links-column {
+  margin-bottom: calc(1.5em - 3px);
+  padding: 0;
+  width: 100%;
+}
+
+
+
+.uh-footer .site-footer .footer-logo {
+  margin: 10px 0 30px;
+  max-width: 260px;
+}
+
+.uh-footer .site-footer .footer-logo a img {
+  display: block;
+  width: 100%;
+}
+
+.uh-footer .site-footer .footer-logo svg {
+  display: block;
+  fill: white;
+}
+
+.uh-footer .site-footer .contact-info {
+  line-height: 1.5;
+}
+
+.uh-footer .site-footer .footer-links {
+  display: block;
+  width: 100%;
+}
+
+.uh-footer .site-footer .footer-links-list {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  -webkit-column-count: 1;
+  -moz-column-count: 1;
+  column-count: 1;
+  -webkit-column-gap: 2.5rem;
+  -moz-column-gap: 2.5rem;
+  column-gap: 2.5rem;
+  text-align: center;
+}
+
+.uh-footer .site-footer .footer-links-list li {
+  margin: 0;
+  padding: 9px 0 0;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  break-inside: avoid;
+
+  a {
+    padding: 5px 10px;
+  }
+
+}
+
+.uh-footer .site-footer .social-media-list {
+  list-style: none;
+  margin-top: 0;
+  padding: 9px 0 0;
+  width: 100%;
+  -webkit-align-content: flex-start;
+  align-content: flex-start;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: row;
+  flex-direction: row;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.uh-footer .site-footer .social-media-list li {
+  margin: 0 10px 10px 0;
+  padding: 0;
+}
+
+.social-media-list a svg {
+  fill: #FFF9D9;
+  transition: color .25s ease;
+  width: 40px;
+  height: 40px;
+  display: block;
+  margin: 0 0;
+  padding: 0 0;
+
+}
+
+.social-media-list svg:hover {
+  fill: #FFF;
+}
+
+.gt-widget {
+  margin: 10px 0 0 0;
+}
+
+.goog-te-gadget,
+a.goog-logo-link {
+  color: #fff9d9 !important;
+}
+
+.goog-te-combo {
+  color: #000;
+  font-family: milo;
+  font-weight: 600;
+  font-size: 12pt;
+  background: #fff9d9;
+  height: 1.5rem;
+  line-height: 1.5rem;
+  vertical-align: middle;
+  border: none;
+  color: #c8102e;
+}
+
+
+@media screen and (max-width: 420px) {
+  .uh-footer .site-footer .footer-logo {
+    margin: 10px auto 30px;
+  }
+}
+
+@media screen and (min-width: 600px) {
+
+  .uh-footer .site-footer .contact-block,
+  .uh-footer .site-footer .footer-links-list,
+  .uh-footer .site-footer .footer-links-column {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .uh-footer .site-footer .container {
+    padding: 0;
+    display: -webkit-flex;
+    display: flex;
+  }
+
+  .uh-footer .site-footer .contact-block {
+    width: 33%;
+  }
+
+  .uh-footer .site-footer .footer-links {
+    width: 67%;
+  }
+
+  .uh-footer .site-footer .footer-links-list {
+    width: 100%;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .uh-footer .site-footer .container {
+    padding: 0 1.25rem;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  .uh-footer .site-footer .footer-links {
+    display: -webkit-flex;
+    display: flex;
+  }
+
+  .uh-footer .site-footer .footer-links-column {
+    margin-bottom: 0;
+  }
+
+  .uh-footer .site-footer .social-media-list {
+    width: 33.33333333%;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .uh-footer .site-footer .contact-block {
+    width: 33.33333333%;
+  }
+
+  .uh-footer .site-footer .footer-links {
+    width: 100%;
+  }
+
+  .uh-footer .site-footer .social-media-list {
+    width: 25%;
+  }
+}
+
+
+/* ------------------------------------------ */
+/** University Global footer **/
+/* ------------------------------------------ */
+
+
+.global-footer {
+  background-color: #54585A;
+  color: white;
+  font-size: .875rem;
+  padding: 1em 0;
+  height: auto;
+  line-height: 1.5;
+}
+
+.global-footer .container {
+  margin: 0 auto;
+  padding-right: 2.5rem;
+  padding-left: 2.5rem;
+  max-width: 1400px;
+  width: 100%;
+
+}
+
+.global-footer .container a {
+  color: #fff9d9;
+  text-decoration: none;
+  transition: color .25s ease;
+}
+
+.global-footer .container a:hover {
+  color: white;
+}
+
+.global-footer a.copyright {
+  display: inline;
+  margin: 0 .5em 0 0;
+  color: white;
+}
+
+.global-footer .container ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: inline;
+  float: none;
+}
+
+.global-footer .container ul li {
+  display: inline-block;
+  margin-right: .5em;
+  margin-bottom: 0;
+  margin-left: 0;
+  list-style: none;
+}
+
+
+.global-footer .container ul li.nav-item-highlighted a {
+  color: #F6BE00;
+  transition: color .25s ease;
+}
+
+.global-footer .container ul li.nav-item-highlighted a:hover {
+  color: #fff;
+}
+
+
+#uh_logo .prim-logo a img,
+#uh_logo .prim-logo a svg {
+  height: 100%;
+  max-height: 80px;
+  width: auto;
+}
+
+/* ------------------------------------------ */
+/** Dismissible Header Alert  **/
+/* ------------------------------------------ */
+
+.universal-alert .header-alert .alert {
+  margin-bottom: 0;
+  border-radius: 0;
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+  vertical-align: middle;
+  text-align: center;
+  padding: 15px 35px;
+}
+
+.universal-alert .header-alert .alert.alert-warning a:hover {
+  color: #c8102e;
+  text-shadow: none;
+}
+
+.universal-alert .header-alert .alert-dismissible .close {
+  right: 0px;
+  margin-left: 20px;
+}
+
+.universal-alert {
+  display: none;
+}
+
+/* ------------------------------------------ */
+/** Avalon Menu  **/
+/* ------------------------------------------ */
+
+.navbar-default {
+  background-color: #960C22;
+  border-color: #960C22;
+}
+
+@media screen and (max-width: 768px) {
+  #header-navbar {
+
+    .navbar-toggle,
+    .facets-toggle {
+      background: #c8102e;
+      border: none;
+    }
+
+    .navbar-header {
+      background-color: #c8102e;
+    }
+
+    .navbar-brand {
+      background: transparent url('https://apps.lib.uh.edu/uh-elements/secondary-logo.svg') no-repeat center left;
+      background-repeat: no-repeat;
+      background-size: 220px;
+      background-color: #c8102e;
+      width: 50%;
+      max-width: 260px;
+      min-width: 220px;
+      margin-left: 1.25rem;
+    }
+
+    .nav.navbar-nav>li {
+      padding-right: 1rem;
+      padding-left: 1rem;
+    }
+
+    .container {
+      padding: 0;
+    }
+  }
+}
+
+/* ------------------------------------------ */
+/** Homepage Splash  **/
+/* ------------------------------------------ */
+.homepage-splash-lead-copy {
+  background-color: rgba(22, 21, 20, 0.7);
+
+  .lead {
+
+    a,
+    a:visited {
+      color: white;
+      text-decoration: underline;
+    }
+
+    a:hover {
+      color: #c8102e;
+    }
+  }
+}
+
+.homepage-splash-collections {
+  background: #fff9d9;
+  color: #555;
+}
+
+.homepage-splash-collections-title a,
+.collection-carousel a {
+  color: #c8102e;
+}
+
+/* ------------------------------------------ */
+/** Collection Page  **/
+/* ------------------------------------------ */
+
+.sort-btn.active,
+.sort-btn.active:hover,
+.sort-btn:hover {
+  color: #FFF9D9 !important;
+  background: #65171D !important;
+}
+
+.headline {
+  color: #c8102e;
+}
+
+/* ------------------------------------------ */
+/** Browse Page  **/
+/* ------------------------------------------ */
+
+// .panel-success,
+// .facet_limit-active {
+//   border-color: #65171D;
+// }
+
+// .panel-success>.panel-heading,
+// .facet_limit-active>.panel-heading {
+//   color: #fff9d9;
+//   background-color: #c8102e;
+//   border-color: #65171D;
+//   text-shadow: 1px 1px 1px rgba(100, 8, 23, .75);
+// }
+
+.facet_limit-active>.panel-heading.collapse-toggle .panel-title:after {
+  color: inherit;
+}
+
+/* ------------------------------------------ */
+/** Edit Wizard  **/
+/* ------------------------------------------ */
+
+.nav-wizard li.nav-success {
+  background-color: #00b388;
+  border-color: #00b388;
+  color: white;
+
+  .text-muted {
+    color: white;
+  }
+
+}
+
+.nav-wizard li.nav-success a {
+  color: white;
+  text-shadow: rgba(255, 255, 255, 0.2) 0px 1px 0px;
+}
+
+.sub-headline {
+  color: #888b8d;
+}
+
+#associated_files .section_files_tool .btn-primary,
+#supplemental_files .section_files_tool .btn-primary {
+  color: white;
+  background-color: #c8102e;
+  border-color: #960c22;
+}
+
+/* ------------------------------------------ */
+/** System alerts  **/
+/* ------------------------------------------ */
+.homepage-main {
+  #alerts {
+    margin-top: -20px;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  .alert {
+    border-radius: 0;
+  }
+}
+
+main.homepage-main .alert,
+main.homepage-main .me-cannotplay {
+  margin-bottom: 0;
+}

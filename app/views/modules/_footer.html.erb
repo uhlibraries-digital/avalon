@@ -1,31 +1,36 @@
-<%#
-Copyright 2011-2022, The Trustees of Indiana University and Northwestern
-  University.  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed
-  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-  CONDITIONS OF ANY KIND, either express or implied. See the License for the
-  specific language governing permissions and limitations under the License.
----  END LICENSE_HEADER BLOCK  ---
-%>
-<div id="footer" class="<%= "homepage-footer" if current_page?(main_app.root_path) %>">
-
-  <footer class="container">
-    <div class="separator"></div>
-    <ul>
-      <li class="footer-logo">
-        <%= image_tag "AvalonMediaSystem_Logo_A.png", alt: "Avalon Media System - #{t(:release_label)} #{Avalon::VERSION}" %>
-      <li><a href="http://www.avalonmediasystem.org">Avalon Media System Project Website</a> </li>
-      <li><%= link_to "Contact Us", main_app.comments_path %></li>
-    </ul>
-    <div class="release">
-      <%=release_text%>
-      <%= git_commit_info(" (%s %s [%s])") if Rails.env == 'development' %>
+<footer id="footer" class="uh-footer">
+  <nav class="site-footer">
+    <div class="container">
+      <ul class="footer-links-list">
+        <li><a href="https://libraries.uh.edu/" title="Libraries Home">Libraries Home</a></li>
+        <li><a href="https://libraries.uh.edu/contact/feedback" title="Give Us Feedback">Give Us Feedback</a></li>
+        <li><a href="https://libraries.uh.edu/contact" title="Contact Us">Contact Us</a></li>
+        <li><a href="https://libraries.uh.edu/policies/privacy" title="Privacy Policy">Privacy Policy</a></li>
+        <li><%= link_to 'Staff Interface', main_app.admin_collections_path %></li>
+        <% if user_signed_in? %>
+          <li><%= link_to t('auth.sign_out'), main_app.destroy_user_session_path %></li>
+        <% end %>
+      </ul>
     </div>
-  </footer>
-</div>
+  </nav>
+  <div class="global-footer">
+    <div class="container">
+      <a href="http://www.uh.edu" class="copyright" title="University of Houston">&copy;<%= Time.current.year %> University of Houston. All rights reserved.</a>
+      <ul class="nav-required">
+        <li class="nav-item-highlighted"><a href="https://libraries.uh.edu/contact/feedback" title="Report A Problem">Report a problem with this page</a></li>
+        <li><a href="http://www.texas.gov/" title="Texas Government">Texas.gov</a></li>
+        <li><a href="https://gov.texas.gov/organization/hsgd" title="Texas Homeland Security">Texas Homeland Security</a></li>
+        <li><a href="https://www.tsl.texas.gov/trail/index.html" title="TRAIL">TRAIL</a></li>
+        <li><a href="https://sao.fraud.texas.gov/" title="Fraud Reporting">Fraud Reporting</a></li>
+        <li><a href="http://www.sos.state.tx.us/linkpolicy.shtml" title="Linking Notice">Linking Notice</a></li>
+        <li><a href="http://uhsystem.edu/privacy-notice/" title="Privacy Notice">Privacy Notice</a></li>
+        <li><a href="http://www.uh.edu/legal-affairs/general-counsel/texas-public-information/" title="Open Records/Public Information Act">Open Records/Public Information Act</a></li>
+        <li><a href="http://www.thecb.state.tx.us/apps/resumes/" title="Institutional Résumé">Institutional Résumé</a></li>
+        <li><a href="http://www.uh.edu/finance/pages/State_Report.htm" title="Required Reports">Required Reports</a></li>
+        <li><a href="http://www.uh.edu/marcom/guidelines-policies/web-accessibility/" title="Electronic &amp; Information Resources Accessibility">Electronic &amp; Information Resources Accessibility</a></li>
+        <li><a href="http://www.uh.edu/legal-affairs/equal-opportunity/titleIX-sexual-misconduct/" title="Title IX-Sexual Misconduct">Sexual Misconduct Reporting and Awareness</a></li>
+        <li><a href="http://www.uh.edu/policies/" title="University Policies">University Policies</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
