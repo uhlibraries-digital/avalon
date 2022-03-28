@@ -13,7 +13,7 @@ Unless required by applicable law or agreed to in writing, software distributed
   specific language governing permissions and limitations under the License.
 ---  END LICENSE_HEADER BLOCK  ---
 %>
-<form accept-charset="UTF-8" action="/catalog" class="avalon-search-query-form avalon-form-search" method="get">
+<form accept-charset="UTF-8" action="/catalog" class="avalon-search-query-form avalon-form-search <%= "header-search-query" if !current_page?(main_app.root_path) %>" method="get">
   <div style="margin:0;padding:0;display:inline">
     <input name="utf8" type="hidden" value="✓">
   </div>
