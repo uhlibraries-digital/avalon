@@ -11,7 +11,8 @@ Installation instructions are available on Avalon's documentation site:
 # Development
 
 ## Quickstart development with Docker
-Using Docker is the recommended method of setting up an Avalon Media System Development Environment. It can be completed in minutes without installing any dependencies beside Docker itself. It should be noted that the docker-compose.yml provided here is for development only and will be updated continually.
+Using Docker is the recommended method of setting up an Avalon Media System Development Environment. It can be completed in minutes without installing any dependencies beside Docker itself. It should be noted that the docker-compose.yml provided here is for development only and will be updated continually. All application settings should be set in `config/settings.local.yml` so your local settings will not be overwritten by changes.
+
 * Install [Docker](https://docs.docker.com/engine/installation/) and [docker-compose](https://docs.docker.com/compose/install/)
 * ```git clone https://github.com/uhlibraries-digital/avalon.git```
 * ```cd avalon```
