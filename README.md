@@ -21,7 +21,7 @@ Using Docker is the recommended method of setting up an Avalon Media System Deve
 * ```docker-compose pull```
 * `docker-compose run --rm app yarn install`
 * `docker-compose run --rm app rake db:migrate`
-* ```docker-compose up avalon worker```
+* ```docker-compose up app worker```
 * Try loading Avalon in your browser: ```localhost:3000```
 
 To run tests, first bring up the test stack then run Rspec as usual:
