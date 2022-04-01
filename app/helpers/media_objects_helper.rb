@@ -185,8 +185,8 @@ EOF
                          class: 'playable wrap' + (current ? ' current-stream current-section' : '')
           wrapperopen = <<EOF
           #{headeropen}
-          <button class="fa fa-minus-square #{current ? '' : 'hidden'}" data-toggle="collapse" data-target="#section#{index}" aria-expanded="#{current ? 'true' : 'false' }" aria-controls="collapse#{index}"></button>
-          <button class="fa fa-plus-square #{current ? 'hidden' : ''}" data-toggle="collapse" data-target="#section#{index}" aria-expanded="#{current ? 'true' : 'false' }" aria-controls="collapse#{index}"></button>
+          <button class="fa fa-minus-square #{current ? '' : 'hidden'}" data-toggle="collapse" data-target="#section#{index}" aria-expanded="#{current ? 'true' : 'false' }" aria-controls="collapse#{index}" title="collapse section"></button>
+          <button class="fa fa-plus-square #{current ? 'hidden' : ''}" data-toggle="collapse" data-target="#section#{index}" aria-expanded="#{current ? 'true' : 'false' }" aria-controls="collapse#{index}" title="expand section"></button>
           <ul><li>#{link}</li></ul>
           #{headerclose}
 
