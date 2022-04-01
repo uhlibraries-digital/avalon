@@ -17,7 +17,7 @@ Unless required by applicable law or agreed to in writing, software distributed
 <% @page_title = t('collections.show.title', :collection_name => @doc_presenter.name, :application_name => application_name) %>
 <% @poster_url = @doc_presenter.poster_url %>
 
-<div class="collections-landing-wrapper">
+<div id="content" class="collections-landing-wrapper">
   <ol class="breadcrumb">
     <li style="padding-bottom: 0px"><%= link_to 'All Collections', collections_path %></li>
     <li style="padding-bottom: 0px"><%= link_to @doc_presenter.unit, collections_path(filter: @doc_presenter.unit) %>
