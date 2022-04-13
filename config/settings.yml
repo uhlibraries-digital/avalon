@@ -104,3 +104,8 @@ archivesspace:
   endpoint: http://staff.aspace.org::8089
   username: aspace_user
   password: aspace_password
+greens:
+  base_uri: https://ark.example.com/
+  endpoint: https://ark.example.com/api/
+  prefix: do
+  api_key: "abcd0000"
