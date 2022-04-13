@@ -9,6 +9,7 @@
   - ingest
   - ingest_finished_job
   - ingest_status_job
+  - insert_aspace_digital_object
   - mailers
   - master_file_management_move
   - master_file_management_delete

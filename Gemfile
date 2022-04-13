@@ -184,5 +184,8 @@ gem 'activerecord-nulldb-adapter'
 gem 'devise_cas_authenticatable', '1.10.4'
 gem 'aws-sdk-elastictranscoder' # required since 7.3.0 due to require statements in base code
 
+# For custom Minter/ASpace Jobs
+gem 'flexirest', '1.3.33'
+
 extra_gems = File.expand_path("../Gemfile.local", __FILE__)
 eval File.read(extra_gems) if File.exist?(extra_gems)

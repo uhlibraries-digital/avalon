@@ -434,6 +434,11 @@ GEM
     ffi-compiler (1.0.1)
       ffi (>= 1.0.0)
       rake
+    flexirest (1.3.33)
+      activesupport
+      crack
+      faraday
+      multi_json
     font-awesome-rails (4.7.0.8)
       railties (>= 3.2, < 8.0)
     fugit (1.5.2)
@@ -1031,6 +1036,7 @@ DEPENDENCIES
   fastimage
   fcrepo_wrapper
   fedora-migrate!
+  flexirest (= 1.3.33)
   google-analytics-rails (= 1.1.0)
   hashdiff (>= 1.0)
   hooks
