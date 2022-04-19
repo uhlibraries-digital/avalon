@@ -20,6 +20,7 @@
  */
 
 // Translations (English required)
+if (typeof mejs !== 'undefined') {
 mejs.i18n.en['mejs.hd-toggle'] = 'Toggle between HD and SD quality';
 
 // Feature configuration
@@ -177,3 +178,4 @@ Object.assign(MediaElementPlayer.prototype, {
     }
   }
 });
+}
