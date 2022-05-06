@@ -35,7 +35,7 @@ Unless required by applicable law or agreed to in writing, software distributed
   <% if @featured_collection.present? %>
   <section class="homepage-splash-featured-collection">
     <div>
-      <%= image_tag poster_collection_url(@featured_collection.id), class: "homepage-featured-collection-image" %>
+      <%= image_tag poster_collection_url(@featured_collection.id), class: "homepage-featured-collection-image", alt: @featured_collection.name  %>
     </div>
     <div class="homepage-splash-featured-collection-content">
       <h3 class="serif-font">featured collection</h3>

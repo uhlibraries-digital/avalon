@@ -27,7 +27,7 @@ Unless required by applicable law or agreed to in writing, software distributed
 
   <div class="row">
     <div class="document-thumbnail col-sm-4 col-sm-push-8">
-      <%= image_tag @doc_presenter.poster_url %>
+      <%= image_tag @doc_presenter.poster_url, alt: @doc_presenter.name %>
       <div class="filter-collection-button-wrapper">
         <a href="<%= search_catalog_path('f[collection_ssim][]' => @doc_presenter.name) %>"
           class="btn btn-default btn-block">
