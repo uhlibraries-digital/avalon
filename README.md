@@ -17,10 +17,10 @@ Using Docker is the recommended method of setting up an Avalon Media System Deve
 * ```git clone https://github.com/uhlibraries-digital/avalon.git```
 * ```cd avalon```
 * ```cp config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml```
-* `echo "initial_user: <CougarNet ID>" > config/settings.local.yml`
 * ```docker-compose pull```
 * `docker-compose run --rm app yarn install`
 * `docker-compose run --rm app rake db:migrate`
+* `docker-compose run --rm app rake avalon:user:create avalon_username=user@example.com avalon_password=password avalon_groups=administrator`
 * ```docker-compose up app worker```
 * Try loading Avalon in your browser: ```localhost:3000```
 

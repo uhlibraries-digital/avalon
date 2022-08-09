@@ -26,8 +26,17 @@ services:
       - DROPBOX_UPLOAD_URI=/dropbox
       - ENCODE_WORK_DIR=/streams/
       - SECRET_KEY_BASE=abcd1234
-      - CAS_BASE_URL=https://signin.lib.uh.edu/test/
-      - CAS_VALIDATE_URL=https://signin.lib.uh.edu/test/p3/serviceValidate
+      - DEVISE_STRATEGY=database
+      - SAML_ASSERTION_CONSUMER_SERVICE_URL=http://av-test.lib.uh.edu:3000/users/saml/auth
+      - SAML_ASSERTION_CONSUMER_SERVICE_BINDING=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
+      - SAML_NAME_IDENTIFIER_FORMAT=urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+      - SAML_SP_ENTITY_ID=http://av-test.lib.uh.edu:3000/users/saml/metadata
+      - SAML_AUTHN_CONTEXT=urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+      - SAML_SECURITY_ASSERTIONS_ENCRYPTED=false   
+      - SAML_IDP_SSO_SERVICE_URL=https://shibboleth.lib.uh.edu/idp/profile/SAML2/Redirect/SSO
+      - SAML_IDP_SLO_SERVICE_URL=https://shibboleth.lib.uh.edu/idp/profile/Logout
+      - SAML_IDP_CERT_FINGERPRINT=10:D4:0D:08:E0:BF:42:38:78:AD:87:08:B7:7D:14:3C:E2:F6:A2:37
+      - SAML_IDP_CERT_FINGERPRINT_ALGORITHM=http://www.w3.org/2000/09/xmldsig#sha1
     ports:
       - 3000:3000
     depends_on:
