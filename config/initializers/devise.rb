@@ -431,8 +431,7 @@ Devise.setup do |config|
     settings.security[:want_assertions_encrypted] = Settings.saml.security_assertions_encrypted
     settings.idp_sso_service_url                  = Settings.saml.idp_sso_service_url
     settings.idp_slo_service_url                  = Settings.saml.idp_slo_service_url
-    settings.idp_cert_fingerprint                 = Settings.saml.idp_cert_fingerprint
-    settings.idp_cert_fingerprint_algorithm       = Settings.saml.idp_cert_fingerprint_algorithm
+    settings.idp_cert                             = Settings.saml.idp_cert
   end
 
 end
