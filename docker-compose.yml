@@ -26,37 +26,16 @@ services:
       - DROPBOX_UPLOAD_URI=/dropbox
       - ENCODE_WORK_DIR=/streams/
       - SECRET_KEY_BASE=abcd1234
-      - DEVISE_STRATEGY=database
-      - SAML_ASSERTION_CONSUMER_SERVICE_URL=http://av-test.lib.uh.edu:3000/users/saml/auth
-      - SAML_ASSERTION_CONSUMER_SERVICE_BINDING=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
-      - SAML_NAME_IDENTIFIER_FORMAT=urn:oasis:names:tc:SAML:2.0:nameid-format:transient
-      - SAML_SP_ENTITY_ID=http://av-test.lib.uh.edu:3000/users/saml/metadata
-      - SAML_AUTHN_CONTEXT=urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
-      - SAML_SECURITY_ASSERTIONS_ENCRYPTED=false   
-      - SAML_IDP_SSO_SERVICE_URL=https://shibboleth.lib.uh.edu/idp/profile/SAML2/Redirect/SSO
-      - SAML_IDP_SLO_SERVICE_URL=https://shibboleth.lib.uh.edu/idp/profile/Logout
-      - SAML_IDP_CERT=
-          -----BEGIN CERTIFICATE-----
-          MIIDPzCCAiegAwIBAgIULlNaR/yPtpIHLsg043vHlyUUb9owDQYJKoZIhvcNAQEF
-          BQAwIDEeMBwGA1UEAxMVc2hpYmJvbGV0aC5saWIudWguZWR1MB4XDTA5MTEwNjIx
-          NTEwOVoXDTI5MTEwNjIxNTEwOVowIDEeMBwGA1UEAxMVc2hpYmJvbGV0aC5saWIu
-          dWguZWR1MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiLfH0IINKgkb
-          rIOkA/VFCgs+O8Voj/ywl8krAdq2+F5VQQC1+pHoTtcMp7MRHJ/HsRmDjQVkWlNR
-          QEnFhnJv38dEIZnfkKWoijqWXTvkQeSvw+9rhU44I1GoBAxYRLm8BuljkOUlt/Xe
-          pfusfkjNZaSoeXyS4Q8VGxOtY4FrRXK5SuVhU8tYiBHj+oN7EEHaaj6amADey8u/
-          kmGdlJIaq71qwkm9xPeOCcAceLJF0pJBsGUx4sDR4E3y+wGEoPfMSMgJFDH1cmmj
-          lFlbE81f6R+57NaX5gIX2oDQStj/D4B5BTSkV0EJiG6ZwcdzsX4nRv+qI1XtMfN3
-          vYu8DcA4VwIDAQABo3EwbzBOBgNVHREERzBFghVzaGliYm9sZXRoLmxpYi51aC5l
-          ZHWGLGh0dHBzOi8vc2hpYmJvbGV0aC5saWIudWguZWR1L2lkcC9zaGliYm9sZXRo
-          MB0GA1UdDgQWBBTWtN42GnjSk3RkyD9wChaumT6JeTANBgkqhkiG9w0BAQUFAAOC
-          AQEAckRFXo/Ps3CGTexk0U6VhZ3nUihG8dQR6yECjxpnrZU19u8u8jETLvTdgccL
-          LTUlW9oapCGLiDNe9pAz04OrXrWFPaAG64eeFudF9ADat26Fb93alIUlJYTvIH9C
-          7cIVqjtE4w1YDiGxIkmlxPCFsjxqQjRNzWvNmJAZ/7BqunjcKu573Ilv4CcteD2P
-          E9I51v3x2TJs8SbOPJN87OyKEAilTSERUgXLxPKpGdL/3D3fZTB2cg35/EbDsAHd
-          YBqltouvVCvEIi4TGm2qwqj8+X+JwbZ+ZHyLsy6u0GTBDQtMAvij6n17rKlM7DOv
-          asKcVxzFt1IOY7qRu811/rvH7A==
-          -----END CERTIFICATE-----
-      
+      - SETTINGS__AUTH__DEVISE_STRATAGY=saml
+      - SETTINGS__SAML__ASSERTION_CONSUMER_SERVICE_URL=http://localhost:3000/users/saml/auth
+      - SETTINGS__SAML__ASSERTION_CONSUMER_SERVICE_BINDING=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
+      - SETTINGS__SAML__NAME_IDENTIFIER_FORMAT=urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+      - SETTINGS__SAML__SP_ENTITY_ID=http://localhost:3000/users/saml/metadata
+      - SETTINGS__SAML__AUTHN_CONTEXT=urn:oasis:names:tc:SAML:2.0:ac:classes:Password
+      - SETTINGS__SAML__SECURITY_ASSERTIONS_ENCRYPTED=false
+      - SETTINGS__SAML__IDP_SSO_SERVICE_URL=http://localhost:8888/simplesaml/saml2/idp/SSOService.php
+      - SETTINGS__SAML__IDP_SLO_SERVICE_URL=http://localhost:8888/simplesaml/saml2/idp/SingleLogoutService.php
+      - SETTINGS__SAML__IDP_CERT=-----BEGIN CERTIFICATE----- MIICmjCCAYICCQDX5sKPsYV3+jANBgkqhkiG9w0BAQsFADAPMQ0wCwYDVQQDDAR0 ZXN0MB4XDTE5MTIyMzA5MDI1MVoXDTIwMDEyMjA5MDI1MVowDzENMAsGA1UEAwwE dGVzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdtDJ278DQTp84O 5Nq5F8s5YOR34GFOGI2Swb/3pU7X7918lVljiKv7WVM65S59nJSyXV+fa15qoXLf sdRnq3yw0hTSTs2YDX+jl98kK3ksk3rROfYh1LIgByj4/4NeNpExgeB6rQk5Ay7Y S+ARmMzEjXa0favHxu5BOdB2y6WvRQyjPS2lirT/PKWBZc04QZepsZ56+W7bd557 tdedcYdY/nKI1qmSQClG2qgslzgqFOv1KCOw43a3mcK/TiiD8IXyLMJNC6OFW3xT L/BG6SOZ3dQ9rjQOBga+6GIaQsDjC4Xp7Kx+FkSvgaw0sJV8gt1mlZy+27Sza6d+ hHD2pWECAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAm2fk1+gd08FQxK7TL04O8EK1 f0bzaGGUxWzlh98a3Dm8+OPhVQRi/KLsFHliLC86lsZQKunYdDB+qd0KUk2oqDG6 tstG/htmRYD/S/jNmt8gyPAVi11dHUqW3IvQgJLwxZtoAv6PNs188hvT1WK3VWJ4 YgFKYi5XQYnR5sv69Vsr91lYAxyrIlMKahjSW1jTD3ByRfAQghsSLk6fV0OyJHyh uF1TxOVBVf8XOdaqfmvD90JGIPGtfMLPUX4m35qaGAU48PwCL7L3cRHYs9wZWc0i fXZcBENLtHYCLi5txR8c5lyHB9d3AQHzKHMFNjLswn5HsckKg83RH7+eVqHqGw== -----END CERTIFICATE-----
     ports:
       - 3000:3000
     depends_on:
@@ -65,6 +44,7 @@ services:
       - solr
       - nginx
       - redis
+      - idp
     volumes:
       - .:/avalon-app
       - ./dropbox:/var/avalon/dropbox
@@ -124,6 +104,15 @@ services:
       - solr-precreate
       - avalon
       - /opt/solr/avalon_conf
+
+  idp:
+    image: seanlw/fake-azuread
+    ports:
+      - 8888:8080
+    environment:
+      - SIMPLESAMLPHP_SP_ENTITY_ID=http://localhost:3000/users/saml/metadata
+      - SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE=http://localhost:3000/users/saml/auth
+      - SIMPLESAMLPHP_SP_SINGLE_LOGOUT_SERVICE=http://localhost:3000/users/saml/idp_sign_out
 
 volumes:
   db:
