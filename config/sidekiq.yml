@@ -1,4 +1,5 @@
 ---
+:concurrency: <%= ENV["JOB_THREADS"] || 2 %>
 :queues:
   - default
   - batch_ingest
