@@ -32,7 +32,12 @@ class User < ActiveRecord::Base
   # devise_list << { authentication_keys: [:login] }
 
   # devise(*devise_list)
-  devise :cas_authenticatable, :invitable
+  
+  devise_list = [ :invitable, :trackable ]
+  devise_list += [ :database_authenticatable, { authentication_keys: [:login] } ] if Settings.auth.devise_strategy == "database" 
+  devise_list << :saml_authenticatable if Settings.auth.devise_strategy == "saml"
+  
+  devise(*devise_list)
 
   validates :username, presence: true, uniqueness: { case_sensitive: false }
   validates :email, presence: true, uniqueness: { case_sensitive: false }
@@ -40,19 +45,9 @@ class User < ActiveRecord::Base
 
   before_destroy :remove_bookmarks
 
-  def cas_extra_attributes=(extra_attributes)
-    extra_attributes.each do |name, value|
-      case name.to_sym
-        when :extensionAttribute15
-          self.email = value
-      end
-    end
-    self.provider = 'CAS'
-  end
-
   def username_email_uniqueness
     errors.add(:email, :taken, value: email) if User.find_by_username(email) && User.find_by_username(email).id != id
-    errors.add(:username, :taken, valud: username) if User.find_by_email(username) && User.find_by_email(username).id != id
+    errors.add(:username, :taken, value: username) if User.find_by_email(username) && User.find_by_email(username).id != id
   end
 
   # Method added by Blacklight; Blacklight uses #to_s on your

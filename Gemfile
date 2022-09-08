@@ -181,7 +181,7 @@ end
 # Gems for UHL
 
 gem 'activerecord-nulldb-adapter'
-gem 'devise_cas_authenticatable', '1.10.4'
+gem 'devise_saml_authenticatable'
 gem 'aws-sdk-elastictranscoder' # required since 7.3.0 due to require statements in base code
 
 # For custom Minter/ASpace Jobs

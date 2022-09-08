@@ -77,18 +77,25 @@ encode_throttling:
   update_jobs_throttle_threshold: 3
   update_jobs_spacing: 10
 auth:
-  registerable: true
-#   configuration:
-#     - :name: Avalon Lti OAuth
-#       :provider: :lti
-#       :hidden: true
-#       :params:
-#         :oauth_credentials:
-#           somekey: somesecret
-cas:
-  base_url: <%= ENV['CAS_BASE_URL'] %>
-  validate_url: <%= ENV['CAS_VALIDATE_URL'] %>
-  create_user: true
+  registerable: false
+  devise_strategy: "saml"
+  #   configuration:
+  #     - :name: Avalon Lti OAuth
+  #       :provider: :lti
+  #       :hidden: true
+  #       :params:
+  #         :oauth_credentials:
+  #           somekey: somesecret
+saml:
+  assertion_consumer_service_url: "http://localhost:3000/users/saml/auth"
+  assertion_consumer_service_binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+  name_identifier_format: "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"
+  sp_entity_id: "http://localhost:3000/users/saml/metadata"
+  authn_context: "urn:oasis:names:tc:SAML:2.0:ac:classes:Password"
+  security_assertions_encrypted: false
+  idp_sso_service_url: "http://localhost:8888/simplesaml/saml2/idp/SSOService.php"
+  idp_slo_service_url: "http://localhost:8888/simplesaml/saml2/idp/SingleLogoutService.php"
+  idp_cert: "SOME_IDP_CERT"
 # google_analytics_tracking_id: "someid"
 supplemental_files:
   proxy: false

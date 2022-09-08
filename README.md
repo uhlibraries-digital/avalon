@@ -17,13 +17,27 @@ Using Docker is the recommended method of setting up an Avalon Media System Deve
 * ```git clone https://github.com/uhlibraries-digital/avalon.git```
 * ```cd avalon```
 * ```cp config/controlled_vocabulary.yml.example config/controlled_vocabulary.yml```
-* `echo "initial_user: <CougarNet ID>" > config/settings.local.yml`
 * ```docker-compose pull```
 * `docker-compose run --rm app yarn install`
 * `docker-compose run --rm app rake db:migrate`
+* `docker-compose run --rm app rake avalon:user:create avalon_username=smithj avalon_email=smithj@fakester.com avalon_groups=administrator`
 * ```docker-compose up app worker```
 * Try loading Avalon in your browser: ```localhost:3000```
 
+### Authentication
+This instance of Avalon is setup to use SAML authentication. The development environment comes with a IDP [Fake AzureAD](https://hub.docker.com/r/seanlw/fake-azuread) with 2 users available. (NOTE: Fake AzureAD is not to be used in a production environment)
+
+Administrator Account:
+Username|Password
+---|---
+smithj|password
+
+Basic User Account:
+Username|Password
+---|---
+doej|password
+
+### Testing
 To run tests, first bring up the test stack then run Rspec as usual:
 * ```docker-compose up test```
 * ```docker-compose exec test bash -c "bundle exec rspec"```

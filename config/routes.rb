@@ -58,8 +58,8 @@ Rails.application.routes.draw do
   #   end
   # end
 
-  # CAS users route
-  devise_for :users, :controllers => {sessions: 'devise/cas_sessions' }
+  # devise users route
+  devise_for :users
 
   mount BrowseEverything::Engine => '/browse'
 

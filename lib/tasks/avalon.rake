@@ -235,16 +235,16 @@ EOC
   namespace :user do
     desc "Create user (assumes database authentication)"
     task :create => :environment do
-      if ENV['avalon_username'].nil? or ENV['avalon_password'].nil?
-        abort "You must specify a username and password.  Example: rake avalon:user:create avalon_username=user@example.edu avalon_password=password avalon_groups=group1,group2"
+      if ENV['avalon_username'].nil? or ENV['avalon_email'].nil?
+        abort "You must specify a username and email.  Example: rake avalon:user:create avalon_username=user avalon_email=user@example.edu avalon_password=password avalon_groups=group1,group2"
       end
 
       require 'avalon/role_controls'
       username = ENV['avalon_username'].dup
-      password = ENV['avalon_password']
+      email = ENV['avalon_email']
       groups = ENV['avalon_groups'].nil? ? [] : ENV['avalon_groups'].split(",")
 
-      User.create!(username: username, email: username, password: password, password_confirmation: password)
+      User.create!(username: username, email: email)
       groups.each do |group|
         Avalon::RoleControls.add_role(group) unless Avalon::RoleControls.role_exists? group
         Avalon::RoleControls.add_user_role(username, group)
