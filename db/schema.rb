@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_08_10_075349) do
+ActiveRecord::Schema.define(version: 2022_09_09_210351) do
 
   create_table "active_encode_encode_records", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", force: :cascade do |t|
     t.string "global_id"
@@ -119,6 +119,17 @@ ActiveRecord::Schema.define(version: 2022_08_10_075349) do
     t.string "context_id"
     t.string "title"
     t.text "label"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "encode_queues", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", force: :cascade do |t|
+    t.string "title"
+    t.string "master_file_id"
+    t.string "status_code"
+    t.float "percent_complete"
+    t.string "options"
+    t.string "input_path"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

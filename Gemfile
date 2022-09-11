@@ -179,7 +179,7 @@ group :mysql, optional: true do
 end
 
 # Gems for UHL
-
+gem 'activejob-locking'
 gem 'activerecord-nulldb-adapter'
 gem 'devise_saml_authenticatable'
 gem 'aws-sdk-elastictranscoder' # required since 7.3.0 due to require statements in base code
