@@ -1015,7 +1015,8 @@ h5.panel-title {
 }
 
 /*Encode dashboard progress bar */
-#encode-records {
+#encode-records,
+#encode-queue {
   .progress {
     background-color: #bcbebf;
     text-align: left;
@@ -1033,6 +1034,9 @@ h5.panel-title {
     }
     .running {
       background-color: $lightblue;
+    }
+    .queued {
+      background-color: #494949;
     }
     .progress-bar {
       text-align: left;

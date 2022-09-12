@@ -26,6 +26,13 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :encode_queue, only: [:index] do
+    collection do
+      post :paged_index
+      post :progress
+    end
+  end
+
   resources :bookmarks do
     concerns :exportable
 
