@@ -1023,6 +1023,7 @@ h5.panel-title {
     position: relative;
     height: 13px;
     margin: 4px 0px;
+    box-sizing: border-box;
     .completed {
       background-color: $success;
     }
