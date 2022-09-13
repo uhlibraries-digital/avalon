@@ -26,6 +26,7 @@ services:
       - DROPBOX_UPLOAD_URI=/dropbox
       - ENCODE_WORK_DIR=/streams/
       - SECRET_KEY_BASE=abcd1234
+      - SETTINGS__ACTIVE_STORAGE__ROOT=/var/avalon/storage
       - SETTINGS__AUTH__DEVISE_STRATAGY=saml
       - SETTINGS__SAML__ASSERTION_CONSUMER_SERVICE_URL=http://localhost:3000/users/saml/auth
       - SETTINGS__SAML__ASSERTION_CONSUMER_SERVICE_BINDING=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
@@ -48,6 +49,7 @@ services:
     volumes:
       - .:/avalon-app
       - ./dropbox:/var/avalon/dropbox
+      - ./storage:/var/avalon/storage
       - streams:/streams
       - uploads:/var/avalon/uploads
 

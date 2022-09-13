@@ -1,0 +1,90 @@
+<p id="notice"><%= notice %></p>
+
+<div class="container">
+  <h1>Encoding Queue Dashboard</h1>
+
+  <table id="encode-queue"
+         class="table table-striped"
+         data-turbolinks="false"
+         data-progress-url="<%= progress_encode_queue_index_path(format: :json) %>">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>ID</th>
+        <th>Progress</th>
+        <th>Filename</th>
+        <th>MasterFile</th>
+        <th>Queued</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    </tbody>
+  </table>
+</div>
+
+<% content_for :page_scripts do %>
+<script>
+
+var queueProgressTimeout;
+
+update_queue_progress = function() {
+  var ids = $('.progress-bar').map(function(d){ return $(this).data('encode-id') }).get();
+  $.post({
+    url: $('#encode-queue').data('progress-url'),
+    data: {ids: ids},
+    success: function(progress_data) {
+      var stop = true;
+      $('.progress-bar').each(function(i, bar) {
+        var encode_data = progress_data[$(bar).data('encode-id')]
+        $(bar).closest('tr').find('.encode-status').text(encode_data['status'])
+        toggleCSS($(bar), encode_data['status'].toLowerCase())
+        $(bar).attr('aria-valuenow', encode_data['progress'])
+        $(bar).attr('style', 'width: ' + encode_data['progress'] + '%')
+        stop = stop && (encode_data['progress'] == 100)
+      });
+      if (!stop) {
+        queueProgressTimeout = setTimeout(update_queue_progress, 10000);
+      }
+    }
+  }
+  );
+}
+
+toggleCSS = function(el, status) {
+  if(!el.hasClass(status)) {
+    el.removeClass();
+    el.addClass('progress-bar ' + status);
+    if(status === 'cancelled' || status === 'failed') {
+      el.addClass('progress-bar-striped')
+    }
+  } else {
+    if(status === 'running') {
+      el.addClass('progress-bar-striped progress-bar-animated active');
+    }
+  }
+}
+
+$(document).ready( function () {
+  $('#encode-queue').dataTable({
+    searching: false,
+    stateSave: true,
+    processing: true,
+    serverSide: true,
+    dom:'<"dataTableToolsTop"Blf><"dataTableBody"t><"dataTableToolsBottom"ipr>',
+    autoWidth:true,
+    order: [[ 5, 'desc' ]],
+    lengthMenu: [10, 20, 50, 100],
+    pageLength: 20,
+    ajax: {
+      url: '/encode_queue/paged_index',
+      type: 'POST'
+    }
+  }).on( 'draw.dt', function () {
+    clearTimeout(queueProgressTimeout);
+    update_queue_progress();
+  })
+});
+
+</script>
+<% end %>

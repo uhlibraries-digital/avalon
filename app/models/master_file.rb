@@ -254,7 +254,8 @@ class MasterFile < ActiveFedora::Base
 
     return process_pass_through(file) if self.workflow_name == 'pass_through'
 
-    ActiveEncodeJobs::CreateEncodeJob.perform_later(input_path, id, headers: @auth_header)
+    # ActiveEncodeJobs::CreateEncodeJob.perform_later(input_path, id, headers: @auth_header)
+    EncodeQueueJobs::CreateEncodeQueueJob.perform_later(input_path, id, headers: @auth_header)
   end
 
   def process_pass_through(file)
@@ -270,7 +271,8 @@ class MasterFile < ActiveFedora::Base
       options[:outputs] = [{ label: 'high', url: input }]
     end
 
-    ActiveEncodeJobs::CreateEncodeJob.perform_now(input, id, options)
+    # ActiveEncodeJobs::CreateEncodeJob.perform_now(input, id, options)
+    EncodeQueueJobs::CreateEncodeJob.perform_now(input, id, options)
   end
 
   def input_path

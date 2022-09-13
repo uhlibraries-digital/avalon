@@ -13,3 +13,4 @@ config/settings/production.yml
 config/settings.local.yml
 log
 dropbox
+storage

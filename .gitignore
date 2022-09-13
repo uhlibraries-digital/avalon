@@ -37,5 +37,7 @@ config/fedora3.yml
 migration_report
 /dropbox/*
 !/dropbox/.keep
+/storage/*
+!/storage/.keep
 .env-development
 node_modules
