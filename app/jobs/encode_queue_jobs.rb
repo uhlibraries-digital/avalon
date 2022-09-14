@@ -56,4 +56,23 @@ module EncodeQueueJobs
     end
   end
 
+  class Delete < ActiveJob::Base
+    queue_as :encode_queue
+
+    def perform(master_file_ids)
+      master_file_ids.each do |id|
+        EncodeQueue.where(master_file_id: id).destroy_all
+      end
+    end
+  end
+
+  class Cleanup < ActiveJob::Base
+    queue_as :encode_queue
+
+    def perform()
+      EncodeQueue.where(['created_at < ? AND (status_code = "COMPLETED" OR status_code = "FAILED" OR status_code = "CANCELLED")', 1.week.ago]).destroy_all
+    end
+  end
+
+
 end
