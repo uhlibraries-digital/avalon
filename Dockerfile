@@ -24,6 +24,7 @@ RUN mkdir /avalon-app
 RUN mkdir -p /streams/hls_streams
 RUN mkdir -p /var/avalon/uploads
 RUN mkdir -p /var/avalon/dropbox
+RUN mkdir -p /var/avalon/storage
 WORKDIR /avalon-app
 
 # Install gems

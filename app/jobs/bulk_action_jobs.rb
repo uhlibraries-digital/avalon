@@ -134,6 +134,7 @@ module BulkActionJobs
       successes = []
       documents.each do |id|
         media_object = MediaObject.find(id)
+        EncodeQueueJobs::Delete.perform_later media_object.master_file_ids unless media_object.nil?
         if media_object.destroy
           successes += [media_object]
         else

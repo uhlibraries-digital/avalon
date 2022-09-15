@@ -9,7 +9,7 @@ default: &default
   host: <%= ENV['DATABASE_HOST'] %>
   username: <%= ENV['DATABASE_USER'] %>
   password: <%= ENV['DATABASE_PASSWORD'] %>
-  pool: 5
+  pool: <%= ENV['DATABASE_POOL'] || 5 %>
   timeout: 10000
 
 development:

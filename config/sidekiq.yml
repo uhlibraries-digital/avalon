@@ -6,6 +6,7 @@
   - bulk_access_control
   - create_encode
   - delete_course
+  - encode_queue
   - extract_still
   - ingest
   - ingest_finished_job
