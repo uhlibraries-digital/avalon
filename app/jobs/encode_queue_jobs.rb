@@ -43,12 +43,12 @@ module EncodeQueueJobs
     end
 
     def perform()
-      running = EncodeQueue.where(status_code: 'RUNNING').count
+      running = EncodeQueue.where(['status_code = "RUNNING" OR status_code = "STARTING"']).count
       if running < Settings.encoding.encode_limit
         diff = Settings.encoding.encode_limit - running
         EncodeQueue.where(status_code: 'QUEUED').limit(diff).each do |eq|
           Rails.logger.info("<< Encoding Queue #{eq.id} >>")
-          eq.status_code = 'RUNNING'
+          eq.status_code = 'STARTING'
           eq.save!
           eq.encode!
         end

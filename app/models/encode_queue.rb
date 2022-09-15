@@ -20,7 +20,7 @@ class EncodeQueue < ApplicationRecord
   end
 
   def running?
-    status?('RUNNING')
+    ['RUNNING', 'STARTING'].include?(status_code)
   end
 
   def finished_encoding?
