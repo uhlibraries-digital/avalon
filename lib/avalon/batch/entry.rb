@@ -20,11 +20,12 @@ module Avalon
     class Entry
       extend ActiveModel::Translation
 
-      attr_reader :fields, :files, :opts, :row, :errors, :manifest, :collection
+      attr_reader :fields, :files, :supplemental_files, :opts, :row, :errors, :manifest, :collection
 
-      def initialize(fields, files, opts, row, manifest)
+      def initialize(fields, files, supplemental_files, opts, row, manifest)
         @fields = fields || opts[:fields]
         @files  = files || opts[:files]
+        @supplemental_files = supplemental_files || opts[:supplemental_files]
         @row    = row || opts[:position]
         @manifest = manifest || opts[:manifest]
         # The next two depend on the manifest but it isn't available until after initialization hence the accessors below.
@@ -61,6 +62,7 @@ module Avalon
         json_hash = opts
         json_hash[:fields] = fields
         json_hash[:files] = files
+        json_hash[:supplemental_files] = supplemental_files
         json_hash[:position] = row
         json_hash[:user_key] = user_key
         json_hash[:collection] = collection.id
@@ -69,9 +71,9 @@ module Avalon
 
       def self.from_json(json)
         json_hash = JSON.parse(json)
-        opts = json_hash.except("fields", "files", "position")
+        opts = json_hash.except("fields", "files", "supplemental_files", "position")
         opts[:collection] = Admin::Collection.find(json_hash["collection"])
-        self.new(json_hash["fields"].symbolize_keys, json_hash["files"].map(&:symbolize_keys!), opts.symbolize_keys, json_hash["position"], nil)
+        self.new(json_hash["fields"].symbolize_keys, json_hash["files"].map(&:symbolize_keys!), json_hash["supplemental_files"].map(&:symbolize_keys!), opts.symbolize_keys, json_hash["position"], nil)
       end
 
       def user_key
@@ -224,6 +226,27 @@ module Avalon
             Rails.logger.error "Problem saving MasterFile(#{master_file.id}): #{master_file.errors.full_messages.to_sentence}"
           end
         end
+
+        @supplemental_files.each do |file_spec|
+          supplemental_file = SupplementalFile.new(label: '', tags: [])
+          begin
+            filename = File.basename(file_spec[:supplemental_file])
+            supplemental_file.attach_file(
+              io: File.open(file_spec[:supplemental_file]),
+              filename: filename
+            )
+          rescue StandardError, LoadError => e
+            Rails.logger.error "File could not be attached: #{e.full_message}"
+          end
+
+          if supplemental_file.file.attached? && supplemental_file.save
+            media_object.supplemental_files += [supplemental_file]
+            Rails.logger.error "Unable to delete supplemental file #{file_spec[:supplemental_file]}" unless File.delete(file_spec[:supplemental_file])
+          else
+            Rails.logger.error supplemental_files.errors.full_messages
+          end
+        end
+
         # context = { media_object: media_object, user: @manifest.package.user.user_key, hidden: opts[:hidden] ? '1' : nil }
         # HYDRANT_STEPS.get_step('access-control').execute context
         media_object.workflow.last_completed_step = 'access-control'
