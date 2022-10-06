@@ -819,7 +819,6 @@ nav li {
   -webkit-column-gap: 2.5rem;
   -moz-column-gap: 2.5rem;
   column-gap: 2.5rem;
-  text-align: center;
 }
 
 .uh-footer .site-footer .footer-links-list li {
@@ -828,11 +827,6 @@ nav li {
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
   break-inside: avoid;
-
-  a {
-    padding: 5px 10px;
-  }
-
 }
 
 .uh-footer .site-footer .social-media-list {
