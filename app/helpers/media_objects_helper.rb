@@ -13,6 +13,10 @@
 # ---  END LICENSE_HEADER BLOCK  ---
 
 module MediaObjectsHelper
+
+      IDS_FILTER = ['aspace uri', 'digital object', 'douuid']
+      LINKS_FILTER = ['aspace uri', 'digital object']
+
       # Quick and dirty solution to the problem of displaying the right template.
       # Quick and dirty also gets it done faster.
       def current_step_for(status=nil)
@@ -66,8 +70,21 @@ module MediaObjectsHelper
       def display_other_identifiers media_object
         # bibliographic_id has form [:type,"value"], other_identifier has form [[:type,"value],[:type,"value"],...]
         ids = media_object.bibliographic_id.present? ? [media_object.bibliographic_id] : []
-        ids += Array(media_object.other_identifier)
+        ids += Array(media_object.other_identifier).select{|i| IDS_FILTER.exclude?(i[:source]) }
         ids.uniq.collect{|i| "#{ ModsDocument::IDENTIFIER_TYPES[i[:source]] }: #{ i[:id] }" }
+      end
+
+      def display_links media_object
+        ids = Array(media_object.other_identifier).select{|i| LINKS_FILTER.include?(i[:source])}
+        return nil unless ids.any?
+        link_str = content_tag(:dt, 'Resources')
+        ids.each do |i|
+          label = i[:source] == 'aspace uri' ? 'Finding Aid ' : 'Permalink'
+          label += '<span class="fa fa-external-link"></span>' unless i[:source] == 'digital object'
+          link = link_to("#{label}".html_safe, i[:id], target: "_blank")
+          link_str += content_tag(:dd) { link }
+        end
+        link_str
       end
 
       def display_notes media_object

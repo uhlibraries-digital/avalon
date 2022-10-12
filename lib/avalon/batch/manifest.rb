@@ -23,6 +23,7 @@ module Avalon
       EXTENSIONS = ['csv','xls','xlsx','ods']
       FILE_FIELDS = [:file,:label,:offset,:skip_transcoding,:absolute_location,:date_digitized]
       SKIP_FIELDS = [:collection]
+      SUPPLEMENTAL_FIELDS = [:supplemental_file]
 
       def_delegators :@entries, :each
       attr_reader :spreadsheet, :file, :name, :email, :entries, :package
@@ -102,6 +103,10 @@ module Avalon
         not (value.to_s =~ /^(y(es)?|t(rue)?)$/i).nil?
       end
 
+      def has_file_fields?(f)
+        FILE_FIELDS.include?(f) || SUPPLEMENTAL_FIELDS.include?(f)
+      end
+
       def create_entries!
         first = @spreadsheet.first_row + 2
         last = @spreadsheet.last_row
@@ -115,6 +120,7 @@ module Avalon
             (val.is_a?(Float) and (val == val.to_i)) ? val.to_i.to_s : val.to_s
           end
           content=[]
+          supplement=[]
 
           fields = Hash.new { |h,k| h[k] = [] }
           @field_names.each_with_index do |f,i|
@@ -122,6 +128,9 @@ module Avalon
               if FILE_FIELDS.include?(f)
                 content << {} if f == :file
                 content.last[f] = f == :skip_transcoding ? true?(values[i]) : values[i]
+              elsif SUPPLEMENTAL_FIELDS.include?(f)
+                supplement << {} if f == :supplemental_file
+                supplement.last[f] = values[i]
               else
                 fields[f] << values[i]
               end
@@ -137,7 +146,8 @@ module Avalon
             end
           }
           files = content.each { |file| file[:file] = path_to(file[:file]) }
-          entries << Entry.new(fields.select { |f| !FILE_FIELDS.include?(f) }, files, opts, index, self)
+          supplemental_files = supplement.each { |file| file[:supplemental_file] = path_to(file[:supplemental_file]) }
+          entries << Entry.new(fields.select { |f| !has_file_fields?(f) }, files, supplemental_files, opts, index, self)
         end
       end
 
