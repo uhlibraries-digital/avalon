@@ -11,6 +11,7 @@
 #   CONDITIONS OF ANY KIND, either express or implied. See the License for the
 #   specific language governing permissions and limitations under the License.
 # ---  END LICENSE_HEADER BLOCK  ---
+require 'uri'
 
 module MediaObjectsHelper
 
@@ -81,6 +82,9 @@ module MediaObjectsHelper
         ids.each do |i|
           label = i[:source] == 'aspace uri' ? 'Finding Aid ' : 'Permalink'
           label += '<span class="fa fa-external-link"></span>' unless i[:source] == 'digital object'
+          if i[:source] == 'digital object' && !valid_url?(i[:id])
+            i[:id] = Settings.greens.base_uri + i[:id]
+          end
           link = link_to("#{label}".html_safe, i[:id], target: "_blank")
           link_str += content_tag(:dd) { link }
         end
@@ -287,5 +291,12 @@ EOF
             mf.display_title.present? ? "[#{mf.display_title}] #{c}" : c
           end.sort
         end.flatten.uniq
+      end
+
+      def valid_url?(url)
+        uri = URI.parse(url)
+        uri.is_a?(URI::HTTP) && !uri.host.nil?
+      rescue URI::InvalidURIError
+        false
       end
 end
