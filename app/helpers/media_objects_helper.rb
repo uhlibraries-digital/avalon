@@ -82,8 +82,12 @@ module MediaObjectsHelper
         ids.each do |i|
           label = i[:source] == 'aspace uri' ? 'Finding Aid ' : 'Permalink'
           label += '<span class="fa fa-external-link"></span>' unless i[:source] == 'digital object'
-          if i[:source] == 'digital object' && !valid_url?(i[:id])
-            i[:id] = Settings.greens.base_uri + i[:id]
+          if !valid_url?(i[:id])
+            if i[:source] == i[:source] == 'digital object'
+              i[:id] = Settings.greens.base_uri + i[:id]
+            elsif i[:source] == 'aspace uri'
+              i[:id] = Settings.archivesspace.public_url + i[:id]
+            end
           end
           link = link_to("#{label}".html_safe, i[:id], target: "_blank")
           link_str += content_tag(:dd) { link }
