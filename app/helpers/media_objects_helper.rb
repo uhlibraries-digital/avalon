@@ -83,7 +83,7 @@ module MediaObjectsHelper
           label = i[:source] == 'aspace uri' ? 'Finding Aid ' : 'Permalink'
           label += '<span class="fa fa-external-link"></span>' unless i[:source] == 'digital object'
           if !valid_url?(i[:id])
-            if i[:source] == i[:source] == 'digital object'
+            if i[:source] == 'digital object'
               i[:id] = Settings.greens.base_uri + i[:id]
             elsif i[:source] == 'aspace uri'
               i[:id] = Settings.archivesspace.public_url + i[:id]
