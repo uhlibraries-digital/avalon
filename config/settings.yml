@@ -117,3 +117,6 @@ greens:
   endpoint: https://ark.example.com/api/
   prefix: do
   api_key: "abcd0000"
+alertmanager:
+  endpoint: https://example.com/alerts
+  id: 'avalon'

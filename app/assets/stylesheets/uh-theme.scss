@@ -1222,3 +1222,23 @@ main.homepage-main .alert,
 main.homepage-main .me-cannotplay {
   margin-bottom: 0;
 }
+
+.site-alert {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 20px;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 1.25rem;
+  color: #000;
+  text-shadow: none;
+  background: #f6be00;
+  border-color: #E6AC00;
+  border-radius: 0;
+
+  a {
+    font-weight: inherit;
+    text-decoration: underline;
+    color: #960c22;
+  }
+}

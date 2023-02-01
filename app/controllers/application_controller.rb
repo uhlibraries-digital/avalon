@@ -32,6 +32,7 @@ class ApplicationController < ActionController::Base
   around_action :handle_api_request, if: proc{|c| request.format.json? || request.format.atom? }
   before_action :rewrite_v4_ids, if: proc{|c| request.method_symbol == :get && [params[:id], params[:content]].compact.any? { |i| i =~ /^[a-z]+:[0-9]+$/}}
   before_action :set_no_cache_headers, if: proc{|c| request.xhr? }
+  before_action :site_alert
   prepend_before_action :remove_zero_width_chars
   skip_after_action :discard_flash_if_xhr # Suppress overwhelming Blacklight deprecation warning
 
@@ -218,6 +219,10 @@ class ApplicationController < ActionController::Base
               nil
             end
     obj || GlobalID::Locator.locate(id)
+  end
+
+  def site_alert
+    @site_alert = AlertManager.find(Settings.alertmanager.id).html_safe rescue ''
   end
 
   private
