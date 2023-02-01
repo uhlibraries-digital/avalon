@@ -43,8 +43,8 @@ COPY package.json .
 COPY yarn.lock .
 RUN  yarn install
 
-RUN RAILS_ENV=production SECRET_KEY_BASE=no FEDORA_URL='http://127.0.0.1:8080' DATABASE_URL='nulldb://fake' bundle exec rake webpacker:compile
-RUN RAILS_ENV=production SECRET_KEY_BASE=no FEDORA_URL='http://127.0.0.1:8080' DATABASE_URL='nulldb://fake' bundle exec rake assets:clean assets:precompile
+RUN RAILS_ENV=production SECRET_KEY_BASE=no SETTINGS__REDIS__HOST='127.0.0.1' FEDORA_URL='nulldb://fake' DATABASE_URL='nulldb://fake' bundle exec rake webpacker:compile
+RUN RAILS_ENV=production SECRET_KEY_BASE=no SETTINGS__REDIS__HOST='127.0.0.1' FEDORA_URL='nulldb://fake' DATABASE_URL='nulldb://fake' bundle exec rake assets:clean assets:precompile
 
 # Install entrypoint
 COPY ./entrypoint-production.sh /usr/local/bin/entrypoint-production.sh
