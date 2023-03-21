@@ -190,6 +190,12 @@ module Avalon
           master_file.captions.mime_type='text/vtt'
           master_file.captions.original_name = captions_file
         end
+        captions_file = "#{filename}.srt"
+        if FileLocator.new(captions_file).exist?
+          master_file.captions.content=FileLocator.new(captions_file).reader
+          master_file.captions.mime_type='text/srt'
+          master_file.captions.original_name = captions_file
+        end
       end
 
       def process!
